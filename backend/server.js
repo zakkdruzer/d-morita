@@ -6,8 +6,6 @@ const petsRouter = require('./routes/pets');
 const Pet = require('./models/Pet'); // Asegúrate de tener este import
 
 mongoose.connect(process.env.MONGODB_URI, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
   retryWrites: true,
   w: 'majority'
 })
