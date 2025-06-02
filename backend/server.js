@@ -3,7 +3,7 @@ const mongoose = require('mongoose');
 const express = require('express');
 const cors = require('cors');
 const petsRouter = require('./routes/pets');
-const Pet = require('./models/Pet'); // <-- Asegúrate de importar el modelo
+const Pet = require('./models/Pet'); // Asegúrate de tener este import
 
 mongoose.connect(process.env.MONGODB_URI, {
   useNewUrlParser: true,
@@ -21,23 +21,21 @@ mongoose.connect(process.env.MONGODB_URI, {
 })
 .catch(err => console.error('Error de conexión:', err));
 
+mongoose.connection.once('open', () => {
+  console.log('✅ Conectado a MongoDB Atlas');
+  
+  // Prueba de conexión: contar documentos
+  Pet.countDocuments({})
+    .then(count => console.log(`📊 Total mascotas: ${count}`))
+    .catch(err => console.error('Error contando mascotas:', err));
+});
+
 const app = express();
 app.use(cors());
 app.use(express.json());
 
 // Rutas para mascotas
 app.use('/api/pets', petsRouter);
-
-// Prueba de validación
-const testPet = new Pet({
-  name: "Test",
-  // species: omitido intencionalmente (debería fallar)
-  ownerContact: "123" // inválido si tienes validación extra
-});
-
-testPet.save()
-  .then(() => console.log("Debería fallar!"))
-  .catch(err => console.log("Error esperado:", err.message));
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {

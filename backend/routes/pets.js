@@ -31,4 +31,19 @@ router.get('/', async (req, res) => {
   }
 });
 
+// Agregar consulta a una mascota
+router.post('/:id/consultations', async (req, res) => {
+  try {
+    const pet = await Pet.findById(req.params.id);
+    if (!pet) {
+      return res.status(404).json({ error: 'Mascota no encontrada' });
+    }
+    pet.consultations.push(req.body); // req.body debe tener los datos de la consulta
+    await pet.save();
+    res.status(201).json(pet);
+  } catch (error) {
+    res.status(500).json({ error: 'Error al agregar consulta' });
+  }
+});
+
 module.exports = router;
