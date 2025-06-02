@@ -70,11 +70,7 @@ const LoginPage: React.FC = () => {
           </div>
           
           <div className="text-center text-sm text-gray-600">
-            <p>
-              <span className="font-medium text-teal-700">Credenciales de prueba:</span> 
-              <br />
-              Usuario: <span className="font-mono">admin</span> | Contraseña: <span className="font-mono">password</span>
-            </p>
+            
           </div>
         </form>
       </div>
