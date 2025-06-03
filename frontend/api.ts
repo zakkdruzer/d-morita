@@ -19,9 +19,7 @@ export interface Pet {
 }
 
 // API base
-const API_BASE = import.meta.env.PROD
-  ? "https://d-morita-production.up.railway.app/api"
-  : "http://localhost:3000/api";
+const API_BASE = "https://d-morita-production.up.railway.app/api";
 
 // Obtener todas las mascotas
 export const getPets = async (): Promise<Pet[]> => {

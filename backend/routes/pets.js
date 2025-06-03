@@ -2,6 +2,9 @@ const mongoose = require('mongoose');
 const Pet = require('../models/Pet');
 
 module.exports = async (req, res) => {
+  // Solo responde si la ruta es exactamente /api/pets (sin id)
+  if (req.url !== '/' && req.url !== '') return;
+
   await mongoose.connect(process.env.MONGODB_URI);
 
   if (req.method === 'GET') {
@@ -21,15 +24,7 @@ module.exports = async (req, res) => {
       await newPet.save();
       return res.status(201).json(newPet);
     } catch (error) {
-      if (error.name === 'ValidationError') {
-        const errors = Object.values(error.errors).map(e => e.message);
-        return res.status(400).json({ errors });
-      } else if (error.code === 11000) {
-        return res.status(400).json({ error: 'Valor duplicado: ' + Object.keys(error.keyPattern)[0] });
-      }
-      return res.status(500).json({ error: 'Error interno del servidor' });
+      return res.status(400).json({ error: error.message });
     }
   }
-
-  // Otros métodos (PUT, DELETE, etc.) pueden agregarse aquí
 };

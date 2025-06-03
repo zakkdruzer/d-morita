@@ -1,18 +1,27 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { usePets } from '../context/PetContext';
 import Button from '../components/ui/Button';
+import { getPetById, Pet } from '@api';
 
 const PetDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
-  const { pets } = usePets();
   const navigate = useNavigate();
+  const [pet, setPet] = useState<Pet | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  const pet = pets.find((p) => p.id === id);
+  useEffect(() => {
+    if (id) {
+      getPetById(id)
+        .then((data) => setPet(data))
+        .catch(() => setPet(null))
+        .finally(() => setLoading(false));
+    }
+  }, [id]);
 
-  if (!pet) {
-    return <div>Mascota no encontrada</div>;
-  }
+  if (loading) return <div>Cargando...</div>;
+  if (!pet) return <div>Mascota no encontrada</div>;
+
+  console.log('pet:', pet);
 
   return (
     <div className="max-w-2xl mx-auto bg-white rounded-lg shadow-md p-8 mt-8">
@@ -44,14 +53,14 @@ const PetDetail: React.FC = () => {
         <Button
           type="button"
           variant="primary"
-          onClick={() => navigate(`/mascota/${pet.id}/consulta`)}
+          onClick={() => navigate(`/mascota/${pet._id}/consulta`)}
         >
           Ingresar Consulta
         </Button>
         <Button
           type="button"
           variant="secondary"
-          onClick={() => navigate(`/mascota/${pet.id}/historial-consultas`)}
+          onClick={() => navigate(`/mascota/${pet._id}/historial-consultas`)}
         >
           Historial de Consultas
         </Button>
@@ -65,7 +74,7 @@ const PetDetail: React.FC = () => {
         <Button
           type="button"
           variant="primary"
-          onClick={() => navigate(`/editar-mascota/${pet.id}`)}
+          onClick={() => navigate(`/editar-mascota/${pet._id}`)}
         >
           Modificar Información
         </Button>

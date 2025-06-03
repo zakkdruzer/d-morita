@@ -81,12 +81,12 @@ const SearchPets: React.FC = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {searchResults.map((pet) => (
                 <div
-                  key={pet.id}
+                  key={pet._id}
                   className="cursor-pointer"
-                  onClick={() => navigate(`/mascota/${pet.id}`)}
+                  onClick={() => navigate(`/mascota/${pet._id}`)}
                   tabIndex={0}
                   role="button"
-                  onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') navigate(`/mascota/${pet.id}`); }}
+                  onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') navigate(`/mascota/${pet._id}`); }}
                 >
                   <PetCard pet={pet} />
                 </div>
