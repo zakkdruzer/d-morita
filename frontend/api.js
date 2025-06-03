@@ -73,3 +73,9 @@ export const deleteConsultation = async (petId, consultationId) => {
   });
   return response.json();
 };
+
+// Buscar mascotas por nombre
+export const searchPetsByName = async (name) => {
+  const response = await fetch(`${API_BASE}/pets?name=${encodeURIComponent(name)}`);
+  return response.json();
+};

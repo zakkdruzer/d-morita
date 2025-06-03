@@ -6,6 +6,7 @@ import Select from '../ui/Select';
 import PetCard from './PetCard';
 import { Search as SearchIcon } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { searchPetsByName } from '../../api.js';
 
 const SearchPets: React.FC = () => {
   const { searchPets } = usePets();
@@ -14,10 +15,12 @@ const SearchPets: React.FC = () => {
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const navigate = useNavigate();
 
-  const handleSearch = (e: React.FormEvent) => {
+  const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
-    const results = searchPets(searchQuery, searchField);
-    setSearchResults(results);
+    if (searchQuery.trim()) {
+      const results = await searchPetsByName(searchQuery.trim());
+      setSearchResults(results);
+    }
   };
 
   return (
