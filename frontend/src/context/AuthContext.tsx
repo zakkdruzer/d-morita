@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useReducer, ReactNode } from 'react';
-import { User, AuthState } from '../types';
+import { User, AuthState } from '../../types';
 
 type AuthAction =
   | { type: 'LOGIN_REQUEST' }

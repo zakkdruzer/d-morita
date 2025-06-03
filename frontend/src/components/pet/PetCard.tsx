@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Pet } from '../../types';
+import { Pet } from '../../../types';
 import { usePets } from '../../context/PetContext';
 import { Trash2, Info, X } from 'lucide-react';
 import Button from '../ui/Button';

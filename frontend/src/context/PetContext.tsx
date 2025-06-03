@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, ReactNode } from 'react';
-import { Pet } from '../types';
+import { Pet } from '../../types';
 
 // Mock pet data
 const initialPets: Pet[] = [
