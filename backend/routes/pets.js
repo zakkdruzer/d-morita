@@ -21,10 +21,16 @@ router.post('/', async (req, res) => {
   }
 });
 
-// Obtener todas las mascotas
+// Buscar mascotas por nombre (insensible a mayúsculas/minúsculas)
 router.get('/', async (req, res) => {
   try {
-    const pets = await Pet.find();
+    const { name } = req.query;
+    let pets;
+    if (name) {
+      pets = await Pet.find({ name: { $regex: `^${name}$`, $options: 'i' } });
+    } else {
+      pets = await Pet.find();
+    }
     res.json(pets);
   } catch (error) {
     res.status(500).json({ error: 'Error al obtener mascotas' });
