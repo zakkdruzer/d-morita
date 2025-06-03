@@ -1,4 +1,10 @@
 {
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@api": ["frontend/api.ts"]
+    }
+  },
   "files": [],
   "references": [
     { "path": "./tsconfig.app.json" },
