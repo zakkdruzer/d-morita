@@ -1,5 +1,5 @@
 const API_BASE = import.meta.env.PROD
-  ? "https://d-morita.vercel.app/api"
+  ? "https://d-morita-production.up.railway.app/api"
   : "http://localhost:3000/api";
 
 // Mascotas
