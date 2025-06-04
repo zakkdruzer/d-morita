@@ -11,6 +11,9 @@ interface Consultation {
   observaciones?: string;
   tratamientos?: string;
   recomendacion?: string;
+  date?: string;
+  reason?: string;
+  notes?: string;
   // agrega aquí más campos si los usas
 }
 
@@ -23,15 +26,12 @@ const ConsultationHistory: React.FC = () => {
 
   useEffect(() => {
     if (id) {
-      console.log('ConsultationHistory fetching for id:', id);
+      setLoading(true);
       // Obtener las consultas
       fetch(`/api/pets/${id}/consultations`)
         .then(res => res.json())
         .then(data => setConsultations(data))
         .catch(() => setConsultations([]));
-
-      // Justo antes de buscar la mascota
-      console.log('Consultations endpoint, id:', id);
 
       // Obtener el nombre de la mascota
       fetch(`/api/pets/${id}`)
@@ -41,6 +41,23 @@ const ConsultationHistory: React.FC = () => {
       setLoading(false);
     }
   }, [id]);
+
+  const deleteConsultation = async (consultationId?: string) => {
+    if (!id || !consultationId) return;
+    if (!window.confirm('¿Seguro que deseas eliminar esta consulta?')) return;
+    try {
+      const res = await fetch(`/api/pets/${id}/consultations/${consultationId}`, {
+        method: 'DELETE',
+      });
+      if (res.ok) {
+        setConsultations((prev) => prev.filter((c) => c._id !== consultationId));
+      } else {
+        alert('No se pudo eliminar la consulta.');
+      }
+    } catch {
+      alert('Error al eliminar la consulta.');
+    }
+  };
 
   if (loading) return <div>Cargando...</div>;
 
@@ -53,11 +70,11 @@ const ConsultationHistory: React.FC = () => {
         <ul className="space-y-4">
           {consultations.map((c) => (
             <li key={c._id} className="border rounded p-4 bg-gray-50">
-              <div><b>Fecha:</b> {c.fecha || '-'}</div>
-              <div><b>Anamnesis:</b> {c.anamnesis || '-'}</div>
+              <div><b>Fecha:</b> {c.fecha || c.date || '-'}</div>
+              <div><b>Anamnesis:</b> {c.anamnesis || c.reason || '-'}</div>
               <div><b>Examen Físico:</b> {c.examenFisico || '-'}</div>
               <div><b>Pre-diagnóstico:</b> {c.preDiagnostico || '-'}</div>
-              <div><b>Observaciones:</b> {c.observaciones || '-'}</div>
+              <div><b>Observaciones:</b> {c.observaciones || c.notes || '-'}</div>
               <div><b>Tratamientos:</b> {c.tratamientos || '-'}</div>
               <div><b>Recomendación:</b> {c.recomendacion || '-'}</div>
               <div className="flex gap-2 mt-4">
@@ -68,8 +85,13 @@ const ConsultationHistory: React.FC = () => {
                 >
                   Modificar
                 </Button>
-                {/* Eliminar consulta: aquí deberías implementar la función para eliminar usando la API */}
-                {/* Puedes agregar la función deleteConsultation aquí si la tienes implementada vía API */}
+                <Button
+                  type="button"
+                  variant="danger"
+                  onClick={() => deleteConsultation(c._id)}
+                >
+                  Eliminar
+                </Button>
               </div>
             </li>
           ))}
