@@ -3,7 +3,10 @@ const Pet = require('../models/Pet');
 
 module.exports = async (req, res) => {
   // Solo responde si la ruta es exactamente /api/pets (sin id)
-  if (req.url !== '/' && req.url !== '') return;
+  if (req.url !== '/' && req.url !== '') {
+    // IMPORTANTE: responde explícitamente para evitar que la petición quede colgada
+    return res.status(404).end();
+  }
 
   await mongoose.connect(process.env.MONGODB_URI);
 
