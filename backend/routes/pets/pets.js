@@ -1,5 +1,5 @@
 const mongoose = require('mongoose');
-const Pet = require('../models/Pet');
+const Pet = require('../../models/Pet');
 
 module.exports = async (req, res) => {
   // Solo responde si la ruta es exactamente /api/pets (sin id)
