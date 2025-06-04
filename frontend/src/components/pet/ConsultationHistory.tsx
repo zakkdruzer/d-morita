@@ -23,11 +23,15 @@ const ConsultationHistory: React.FC = () => {
 
   useEffect(() => {
     if (id) {
+      console.log('ConsultationHistory fetching for id:', id);
       // Obtener las consultas
       fetch(`/api/pets/${id}/consultations`)
         .then(res => res.json())
         .then(data => setConsultations(data))
         .catch(() => setConsultations([]));
+
+      // Justo antes de buscar la mascota
+      console.log('Consultations endpoint, id:', id);
 
       // Obtener el nombre de la mascota
       fetch(`/api/pets/${id}`)
