@@ -16,6 +16,7 @@ module.exports = async (req, res) => {
     }
   }
 
+  
   if (req.method === 'PUT') {
     try {
       const pet = await Pet.findByIdAndUpdate(id, req.body, { new: true });

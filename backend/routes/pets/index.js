@@ -20,6 +20,7 @@ module.exports = async (req, res) => {
     }
     return res.status(200).json(pets);
   }
+  
 
   if (req.method === 'POST') {
     try {
