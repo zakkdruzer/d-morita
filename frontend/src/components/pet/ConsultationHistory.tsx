@@ -1,23 +1,54 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { usePets } from '../../context/PetContext';
 import Button from '../ui/Button';
+
+interface Consultation {
+  _id?: string;
+  fecha?: string;
+  anamnesis?: string;
+  examenFisico?: string;
+  preDiagnostico?: string;
+  observaciones?: string;
+  tratamientos?: string;
+  recomendacion?: string;
+  // agrega aquí más campos si los usas
+}
 
 const ConsultationHistory: React.FC = () => {
   const { id } = useParams<{ id: string }>();
-  const { pets, deleteConsultation } = usePets();
-  const pet = pets.find((p) => p.id === id);
+  const [consultations, setConsultations] = useState<Consultation[]>([]);
+  const [petName, setPetName] = useState<string>('');
+  const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
-  if (!pet) return <div>Mascota no encontrada</div>;
+  useEffect(() => {
+    if (id) {
+      // Obtener las consultas
+      fetch(`/api/pets/${id}/consultations`)
+        .then(res => res.json())
+        .then(data => setConsultations(data))
+        .catch(() => setConsultations([]));
+
+      // Obtener el nombre de la mascota
+      fetch(`/api/pets/${id}`)
+        .then(res => res.json())
+        .then(data => setPetName(data.name || ''))
+        .catch(() => setPetName(''));
+      setLoading(false);
+    }
+  }, [id]);
+
+  if (loading) return <div>Cargando...</div>;
 
   return (
     <div className="max-w-2xl mx-auto bg-white rounded-lg shadow-md p-8 mt-8">
-      <h2 className="text-2xl font-bold mb-6 text-teal-700">Historial de Consultas de {pet.name}</h2>
-      {pet.consultations && pet.consultations.length > 0 ? (
+      <h2 className="text-2xl font-bold mb-6 text-teal-700">
+        Historial de Consultas de {petName}
+      </h2>
+      {consultations && consultations.length > 0 ? (
         <ul className="space-y-4">
-          {pet.consultations.map((c) => (
-            <li key={c.id} className="border rounded p-4 bg-gray-50">
+          {consultations.map((c) => (
+            <li key={c._id} className="border rounded p-4 bg-gray-50">
               <div><b>Fecha:</b> {c.fecha || '-'}</div>
               <div><b>Anamnesis:</b> {c.anamnesis || '-'}</div>
               <div><b>Examen Físico:</b> {c.examenFisico || '-'}</div>
@@ -29,17 +60,12 @@ const ConsultationHistory: React.FC = () => {
                 <Button
                   type="button"
                   variant="primary"
-                  onClick={() => navigate(`/mascota/${pet.id}/editar-consulta/${c.id}`)}
+                  onClick={() => navigate(`/mascota/${id}/editar-consulta/${c._id}`)}
                 >
                   Modificar
                 </Button>
-                <Button
-                  type="button"
-                  variant="danger"
-                  onClick={() => deleteConsultation(pet.id, c.id)}
-                >
-                  Eliminar
-                </Button>
+                {/* Eliminar consulta: aquí deberías implementar la función para eliminar usando la API */}
+                {/* Puedes agregar la función deleteConsultation aquí si la tienes implementada vía API */}
               </div>
             </li>
           ))}
@@ -48,7 +74,7 @@ const ConsultationHistory: React.FC = () => {
         <div className="text-gray-500">No hay consultas registradas.</div>
       )}
       <div className="mt-6">
-        <Button onClick={() => navigate(`/mascota/${pet.id}`)}>Volver a la mascota</Button>
+        <Button onClick={() => navigate(`/mascota/${id}`)}>Volver a la mascota</Button>
       </div>
     </div>
   );
