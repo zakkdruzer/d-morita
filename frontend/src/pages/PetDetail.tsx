@@ -18,10 +18,14 @@ const PetDetail: React.FC = () => {
     }
   }, [id]);
 
+  useEffect(() => {
+    if (pet && id) {
+      console.log('URL id:', id, 'pet._id:', pet._id);
+    }
+  }, [pet, id]);
+
   if (loading) return <div>Cargando...</div>;
   if (!pet) return <div>Mascota no encontrada</div>;
-
-  console.log('pet:', pet);
 
   return (
     <div className="max-w-2xl mx-auto bg-white rounded-lg shadow-md p-8 mt-8">
@@ -60,7 +64,10 @@ const PetDetail: React.FC = () => {
         <Button
           type="button"
           variant="secondary"
-          onClick={() => navigate(`/mascota/${pet._id}/historial-consultas`)}
+          onClick={() => {
+            console.log('Navegando al historial de:', pet._id);
+            navigate(`/mascota/${pet._id}/historial-consultas`);
+          }}
         >
           Historial de Consultas
         </Button>
