@@ -9,8 +9,8 @@ const EditConsultationForm: React.FC = () => {
   const { pets } = usePets();
   const navigate = useNavigate();
 
-  const pet = pets.find((p) => p.id === id);
-  const consultation = pet?.consultations?.find((c) => c.id === consultationId);
+  const pet = pets.find((p) => p._id === id);
+  const consultation = pet?.consultations?.find((c) => c._id === consultationId);
 
   const [formData, setFormData] = useState({
     fecha: '',
@@ -140,7 +140,7 @@ const EditConsultationForm: React.FC = () => {
           />
         </div>
         <div className="flex gap-4 mt-8 justify-end">
-          <Button type="button" variant="secondary" onClick={() => navigate(`/mascota/${pet.id}/historial-consultas`)}>
+          <Button type="button" variant="secondary" onClick={() => navigate(`/mascota/${pet._id}/historial-consultas`)}>
             Cancelar
           </Button>
           <Button type="submit" variant="primary">
