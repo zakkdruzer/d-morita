@@ -118,7 +118,7 @@ const EditPetForm: React.FC = () => {
           </div>
         </div>
         <div className="flex gap-4 mt-8 justify-end">
-          <Button type="button" variant="secondary" onClick={() => navigate(`/mascota/${pet.id}`)}>
+          <Button type="button" variant="secondary" onClick={() => navigate(`/mascota/${pet._id}`)}>
             Cancelar
           </Button>
           <Button type="submit" variant="primary">
