@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Button from '../ui/Button';
+import { API_BASE } from '../../apiBase';
 
 const AddConsultationForm: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -22,14 +23,27 @@ const AddConsultationForm: React.FC = () => {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Aquí deberías guardar la consulta (en contexto, API, etc.)
-    setIsSuccess(true);
-    setTimeout(() => {
-      setIsSuccess(false);
-      navigate(`/mascota/${id}`);
-    }, 2000); // 2 segundos de confirmación
+    if (!id) return;
+    try {
+      const res = await fetch(`${API_BASE}/api/pets/${id}/consultations`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData),
+      });
+      if (res.ok) {
+        setIsSuccess(true);
+        setTimeout(() => {
+          setIsSuccess(false);
+          navigate(`/mascota/${id}/historial-consultas`);
+        }, 1500);
+      } else {
+        alert('No se pudo guardar la consulta.');
+      }
+    } catch {
+      alert('Error al guardar la consulta.');
+    }
   };
 
   return (
