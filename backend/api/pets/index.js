@@ -47,6 +47,7 @@ module.exports = async (req, res) => {
   const consultMatch = req.url.match(/^\/([a-f\d]{24})\/consultations$/i);
   if (consultMatch) {
     const id = consultMatch[1];
+    console.log('Consultations endpoint, id:', id);
     if (req.method === 'GET') {
       try {
         const pet = await Pet.findById(id);

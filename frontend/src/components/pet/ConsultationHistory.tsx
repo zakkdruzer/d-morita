@@ -26,6 +26,7 @@ const ConsultationHistory: React.FC = () => {
 
   useEffect(() => {
     if (id) {
+      console.log('ConsultationHistory fetching for id:', id);
       setLoading(true);
       // Obtener las consultas
       fetch(`/api/pets/${id}/consultations`)
