@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { usePets } from '../../context/PetContext';
 import Button from '../ui/Button';
+import { API_BASE } from '../apiBase'; // Ajusta la ruta según corresponda
 
 const EditConsultationForm: React.FC = () => {
   const { id, consultationId } = useParams<{ id: string; consultationId: string }>();

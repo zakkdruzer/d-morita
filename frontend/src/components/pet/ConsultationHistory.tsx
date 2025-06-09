@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Button from '../ui/Button';
+import { API_BASE } from '../../apiBase'; // Ajusta la ruta si es necesario
 
 interface Consultation {
   _id?: string;
@@ -27,7 +28,7 @@ const ConsultationHistory: React.FC = () => {
   useEffect(() => {
     if (id) {
       setLoading(true);
-      fetch(`/api/pets/${id}/consultations`)
+      fetch(`${API_BASE}/api/pets/${id}/consultations`)
         .then(res => res.json())
         .then(data => {
           console.log('Consultations data:', data);
@@ -35,7 +36,7 @@ const ConsultationHistory: React.FC = () => {
         })
         .catch(() => setConsultations([]));
 
-      const fetchPet = fetch(`/api/pets/${id}`)
+      const fetchPet = fetch(`${API_BASE}/api/pets/${id}`)
         .then(res => res.json())
         .then(data => setPetName(data.name || ''))
         .catch(() => setPetName(''));
@@ -48,7 +49,7 @@ const ConsultationHistory: React.FC = () => {
     if (!id || !consultationId) return;
     if (!window.confirm('¿Seguro que deseas eliminar esta consulta?')) return;
     try {
-      const res = await fetch(`/api/pets/${id}/consultations/${consultationId}`, {
+      const res = await fetch(`${API_BASE}/api/pets/${id}/consultations/${consultationId}`, {
         method: 'DELETE',
       });
       if (res.ok) {

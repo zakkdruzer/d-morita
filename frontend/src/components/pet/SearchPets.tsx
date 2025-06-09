@@ -7,6 +7,7 @@ import PetCard from './PetCard';
 import { Search as SearchIcon } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { searchPetsByName } from '@api';
+import { API_BASE } from '../apiBase'; // Ajusta la ruta según corresponda
 
 const SearchPets: React.FC = () => {
   const { searchPets } = usePets();
