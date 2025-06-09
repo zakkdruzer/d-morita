@@ -3,7 +3,7 @@ const mongoose = require('mongoose');
 const express = require('express');
 const cors = require('cors');
 const petsRouter = require('./api/pets');
-const Pet = require('./models/Pet'); // Asegúrate de tener este import
+const Pet = require('./models/Pet'); // Importa el modelo Pet
 
 mongoose.connect(process.env.MONGODB_URI, {
   retryWrites: true,
