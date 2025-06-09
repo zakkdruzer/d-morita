@@ -26,20 +26,19 @@ const ConsultationHistory: React.FC = () => {
 
   useEffect(() => {
     if (id) {
-      console.log('ConsultationHistory fetching for id:', id);
       setLoading(true);
-      // Obtener las consultas
-      fetch(`/api/pets/${id}/consultations`)
+
+      const fetchConsultations = fetch(`/api/pets/${id}/consultations`)
         .then(res => res.json())
         .then(data => setConsultations(data))
         .catch(() => setConsultations([]));
 
-      // Obtener el nombre de la mascota
-      fetch(`/api/pets/${id}`)
+      const fetchPet = fetch(`/api/pets/${id}`)
         .then(res => res.json())
         .then(data => setPetName(data.name || ''))
         .catch(() => setPetName(''));
-      setLoading(false);
+
+      Promise.all([fetchConsultations, fetchPet]).finally(() => setLoading(false));
     }
   }, [id]);
 
