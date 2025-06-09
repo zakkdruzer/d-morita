@@ -3,6 +3,7 @@ const Pet = require('../../models/Pet');
 
 module.exports = async (req, res) => {
   await mongoose.connect(process.env.MONGODB_URI);
+  console.log('Conectado a la base de datos:', mongoose.connection.name);
 
   // /api/pets/test
   if (req.url === '/test') {
