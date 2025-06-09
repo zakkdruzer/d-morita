@@ -27,10 +27,12 @@ const ConsultationHistory: React.FC = () => {
   useEffect(() => {
     if (id) {
       setLoading(true);
-
-      const fetchConsultations = fetch(`/api/pets/${id}/consultations`)
+      fetch(`/api/pets/${id}/consultations`)
         .then(res => res.json())
-        .then(data => setConsultations(data))
+        .then(data => {
+          console.log('Consultations data:', data);
+          setConsultations(data);
+        })
         .catch(() => setConsultations([]));
 
       const fetchPet = fetch(`/api/pets/${id}`)
@@ -38,7 +40,7 @@ const ConsultationHistory: React.FC = () => {
         .then(data => setPetName(data.name || ''))
         .catch(() => setPetName(''));
 
-      Promise.all([fetchConsultations, fetchPet]).finally(() => setLoading(false));
+      Promise.all([fetchPet]).finally(() => setLoading(false));
     }
   }, [id]);
 
