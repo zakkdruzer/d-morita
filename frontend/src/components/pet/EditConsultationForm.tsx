@@ -6,7 +6,7 @@ import { API_BASE } from '../apiBase'; // Ajusta la ruta según corresponda
 
 const EditConsultationForm: React.FC = () => {
   const { id, consultationId } = useParams<{ id: string; consultationId: string }>();
-  const { pets, updateConsultation } = usePets();
+  const { pets } = usePets();
   const navigate = useNavigate();
 
   const pet = pets.find((p) => p.id === id);
@@ -41,11 +41,23 @@ const EditConsultationForm: React.FC = () => {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (pet && consultation) {
-      updateConsultation(pet.id, consultation.id, formData);
-      navigate(`/mascota/${pet.id}/historial-consultas`);
+    if (id && consultationId) {
+      try {
+        const res = await fetch(`${API_BASE}/api/pets/${id}/consultations/${consultationId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(formData),
+        });
+        if (res.ok) {
+          navigate(`/mascota/${id}/historial-consultas`);
+        } else {
+          alert('No se pudo guardar la consulta.');
+        }
+      } catch {
+        alert('Error al guardar la consulta.');
+      }
     }
   };
 
