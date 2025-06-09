@@ -1,16 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { usePets } from '../../context/PetContext';
 import Button from '../ui/Button';
-import { API_BASE } from '../apiBase'; // Ajusta la ruta según corresponda
+import { API_BASE } from '../apiBase';
 
 const EditConsultationForm: React.FC = () => {
   const { id, consultationId } = useParams<{ id: string; consultationId: string }>();
-  const { pets } = usePets();
   const navigate = useNavigate();
-
-  const pet = pets.find((p) => p._id === id);
-  const consultation = pet?.consultations?.find((c) => c._id === consultationId);
 
   const [formData, setFormData] = useState({
     fecha: '',
@@ -21,20 +16,34 @@ const EditConsultationForm: React.FC = () => {
     tratamientos: '',
     recomendacion: '',
   });
+  const [loading, setLoading] = useState(true);
+  const [notFound, setNotFound] = useState(false);
 
   useEffect(() => {
-    if (consultation) {
-      setFormData({
-        fecha: consultation.fecha || '',
-        anamnesis: consultation.anamnesis || '',
-        examenFisico: consultation.examenFisico || '',
-        preDiagnostico: consultation.preDiagnostico || '',
-        observaciones: consultation.observaciones || '',
-        tratamientos: consultation.tratamientos || '',
-        recomendacion: consultation.recomendacion || '',
-      });
+    if (id && consultationId) {
+      fetch(`${API_BASE}/api/pets/${id}/consultations`)
+        .then((res) => res.json())
+        .then((consultations) => {
+          const consulta = consultations.find((c: any) => c._id === consultationId);
+          if (consulta) {
+            setFormData({
+              fecha: consulta.fecha || '',
+              anamnesis: consulta.anamnesis || '',
+              examenFisico: consulta.examenFisico || '',
+              preDiagnostico: consulta.preDiagnostico || '',
+              observaciones: consulta.observaciones || '',
+              tratamientos: consulta.tratamientos || '',
+              recomendacion: consulta.recomendacion || '',
+            });
+            setNotFound(false);
+          } else {
+            setNotFound(true);
+          }
+        })
+        .catch(() => setNotFound(true))
+        .finally(() => setLoading(false));
     }
-  }, [consultation]);
+  }, [id, consultationId]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -61,9 +70,8 @@ const EditConsultationForm: React.FC = () => {
     }
   };
 
-  if (!pet || !consultation) {
-    return <div className="p-8 text-center">Consulta no encontrada.</div>;
-  }
+  if (loading) return <div className="p-8 text-center">Cargando...</div>;
+  if (notFound) return <div className="p-8 text-center">Consulta no encontrada.</div>;
 
   return (
     <div className="max-w-2xl mx-auto bg-white rounded-lg shadow-md p-8 mt-8">
@@ -140,7 +148,7 @@ const EditConsultationForm: React.FC = () => {
           />
         </div>
         <div className="flex gap-4 mt-8 justify-end">
-          <Button type="button" variant="secondary" onClick={() => navigate(`/mascota/${pet._id}/historial-consultas`)}>
+          <Button type="button" variant="secondary" onClick={() => navigate(`/mascota/${id}/historial-consultas`)}>
             Cancelar
           </Button>
           <Button type="submit" variant="primary">
@@ -148,7 +156,6 @@ const EditConsultationForm: React.FC = () => {
           </Button>
         </div>
       </form>
-      {/* Aquí puedes agregar otros componentes o lógica adicional si lo necesitas */}
     </div>
   );
 };
