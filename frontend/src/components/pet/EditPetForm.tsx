@@ -11,7 +11,23 @@ const EditPetForm: React.FC = () => {
   const { pets, updatePet } = usePets();
   const navigate = useNavigate();
 
-  const pet = pets.find((p) => p._id === id);
+  const petFromContext = pets.find((p) => p._id === id);
+  const [pet, setPet] = useState<any>(petFromContext || null);
+  const [loading, setLoading] = useState(!petFromContext);
+
+  useEffect(() => {
+    if (!petFromContext && id) {
+      setLoading(true);
+      fetch(`${API_BASE}/api/pets/${id}`)
+        .then(res => {
+          if (!res.ok) throw new Error('No encontrada');
+          return res.json();
+        })
+        .then(data => setPet(data))
+        .catch(() => setPet(null))
+        .finally(() => setLoading(false));
+    }
+  }, [id, petFromContext]);
 
   const [formData, setFormData] = useState({
     name: '',
@@ -65,6 +81,10 @@ const EditPetForm: React.FC = () => {
       navigate(`/mascota/${pet.id}`);
     }
   };
+
+  if (loading) {
+    return <div className="p-8 text-center">Cargando...</div>;
+  }
 
   if (!pet) {
     return <div className="p-8 text-center">Mascota no encontrada.</div>;
