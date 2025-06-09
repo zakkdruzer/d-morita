@@ -11,7 +11,7 @@ const EditPetForm: React.FC = () => {
   const { pets, updatePet } = usePets();
   const navigate = useNavigate();
 
-  const pet = pets.find((p) => p.id === id);
+  const pet = pets.find((p) => p._id === id);
 
   const [formData, setFormData] = useState({
     name: '',
