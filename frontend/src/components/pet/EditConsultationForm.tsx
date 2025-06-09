@@ -24,6 +24,8 @@ const EditConsultationForm: React.FC = () => {
       fetch(`${API_BASE}/api/pets/${id}/consultations`)
         .then((res) => res.json())
         .then((consultations) => {
+          console.log('consultationId param:', consultationId);
+          console.log('consultations:', consultations.map((c: any) => c._id));
           const consulta = consultations.find((c: any) => c._id === consultationId);
           if (consulta) {
             setFormData({
