@@ -4,7 +4,7 @@ import { usePets } from '../../context/PetContext';
 import Input from '../ui/Input';
 import Select from '../ui/Select';
 import Button from '../ui/Button';
-import { API_BASE } from '../apiBase'; // Ajusta la ruta según corresponda
+import { API_BASE } from '../../apiBase'; // Ajusta la ruta según corresponda
 
 const EditPetForm: React.FC = () => {
   const { id } = useParams<{ id: string }>();

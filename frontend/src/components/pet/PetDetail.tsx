@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { getPetById, Pet } from '@api';
-import { API_BASE } from '../apiBase'; // Ajusta la ruta según corresponda
+import { API_BASE } from '../../apiBase'; // Ajusta la ruta según corresponda
 
 const PetDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();

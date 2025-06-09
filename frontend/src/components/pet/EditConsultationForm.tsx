@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Button from '../ui/Button';
-import { API_BASE } from '../apiBase';
+import { API_BASE } from '../../apiBase';import { API_BASE } from '../../apiBase';
 
 const EditConsultationForm: React.FC = () => {
   const { id, consultationId } = useParams<{ id: string; consultationId: string }>();
