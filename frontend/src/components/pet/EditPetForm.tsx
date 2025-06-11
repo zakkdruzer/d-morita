@@ -20,9 +20,11 @@ const EditPetForm: React.FC = () => {
   useEffect(() => {
     if (!petFromContext && id) {
       setLoading(true);
+      console.log('API_BASE:', API_BASE);
+      console.log('GET URL:', `${API_BASE}/api/pets/${id}`);
       fetch(`${API_BASE}/api/pets/${id}`)
         .then(res => {
-          console.log('GET mascota para editar status:', res.status);
+          console.log('GET mascota para editar status:', res.status, res);
           if (!res.ok) throw new Error('No encontrada');
           return res.json();
         })
