@@ -78,7 +78,7 @@ const EditPetForm: React.FC = () => {
     e.preventDefault();
     if (pet) {
       updatePet({ ...pet, ...formData, age: Number(formData.age) });
-      navigate(`/mascota/${pet.id}`);
+      navigate(`/mascota/${pet._id}`);
     }
   };
 
