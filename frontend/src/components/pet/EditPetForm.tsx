@@ -4,12 +4,14 @@ import { usePets } from '../../context/PetContext';
 import Input from '../ui/Input';
 import Select from '../ui/Select';
 import Button from '../ui/Button';
-import { API_BASE } from '../../apiBase'; // Ajusta la ruta según corresponda
+import { API_BASE } from '../../apiBase';
 
 const EditPetForm: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const { pets } = usePets();
   const navigate = useNavigate();
+
+  console.log('EditPetForm id:', id);
 
   const petFromContext = pets.find((p) => p._id === id);
   const [pet, setPet] = useState<any>(petFromContext || null);
@@ -20,11 +22,18 @@ const EditPetForm: React.FC = () => {
       setLoading(true);
       fetch(`${API_BASE}/api/pets/${id}`)
         .then(res => {
+          console.log('GET mascota para editar status:', res.status);
           if (!res.ok) throw new Error('No encontrada');
           return res.json();
         })
-        .then(data => setPet(data))
-        .catch(() => setPet(null))
+        .then(data => {
+          console.log('Mascota recibida para editar:', data);
+          setPet(data);
+        })
+        .catch((err) => {
+          console.error('Error al obtener mascota para editar:', err);
+          setPet(null);
+        })
         .finally(() => setLoading(false));
     }
   }, [id, petFromContext]);
@@ -48,6 +57,21 @@ const EditPetForm: React.FC = () => {
   useEffect(() => {
     if (pet) {
       setFormData({
+        name: pet.name || '',
+        species: pet.species || '',
+        breed: pet.breed || '',
+        age: pet.age ? String(pet.age) : '',
+        color: pet.color || '',
+        gender: pet.gender || '',
+        chipNumber: pet.chipNumber || '',
+        ownerName: pet.ownerName || '',
+        ownerContact: pet.ownerContact || '',
+        rut: pet.rut || '',
+        email: pet.email || '',
+        address: pet.address || '',
+        medicalHistory: pet.medicalHistory || '',
+      });
+      console.log('FormData seteado:', {
         name: pet.name || '',
         species: pet.species || '',
         breed: pet.breed || '',
@@ -88,22 +112,26 @@ const EditPetForm: React.FC = () => {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(data),
         });
+        console.log('Respuesta PUT:', res.status);
         if (res.ok) {
           navigate(`/mascota/${pet._id}`);
         } else {
           alert('No se pudo actualizar la mascota.');
         }
-      } catch {
+      } catch (err) {
         alert('Error al actualizar la mascota.');
+        console.error(err);
       }
     }
   };
 
   if (loading) {
+    console.log('Cargando...');
     return <div className="p-8 text-center">Cargando...</div>;
   }
 
   if (!pet) {
+    console.log('Mascota no encontrada');
     return <div className="p-8 text-center">Mascota no encontrada.</div>;
   }
 
