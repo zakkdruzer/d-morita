@@ -5,6 +5,8 @@ module.exports = async (req, res) => {
   await mongoose.connect(process.env.MONGODB_URI);
   console.log('Conectado a la base de datos:', mongoose.connection.name);
 
+  console.log('req.url:', req.url, 'req.method:', req.method);
+
   // /api/pets/test
   if (req.url === '/test') {
     return res.status(200).json({ ok: true });
