@@ -17,6 +17,7 @@ module.exports = async (req, res) => {
     const consultationId = editConsultMatch[2];
 
     if (req.method === 'PUT') {
+      console.log('Body recibido en PUT /api/pets/:id:', req.body);
       try {
         const pet = await Pet.findById(petId);
         if (!pet) return res.status(404).json({ message: 'Mascota no encontrada' });
@@ -86,6 +87,7 @@ module.exports = async (req, res) => {
       }
     }
     if (req.method === 'PUT') {
+      console.log('Body recibido en PUT /api/pets/:id:', req.body);
       try {
         const updatedPet = await Pet.findByIdAndUpdate(id, req.body, { new: true });
         if (!updatedPet) return res.status(404).json({ message: 'Mascota no encontrada' });

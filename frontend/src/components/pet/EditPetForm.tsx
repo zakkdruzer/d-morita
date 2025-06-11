@@ -77,11 +77,16 @@ const EditPetForm: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (pet) {
+      const data = {
+        ...formData,
+        age: formData.age ? Number(formData.age) : undefined,
+      };
+      console.log('Enviando datos:', data);
       try {
         const res = await fetch(`${API_BASE}/api/pets/${pet._id}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ ...formData, age: Number(formData.age) }),
+          body: JSON.stringify(data),
         });
         if (res.ok) {
           navigate(`/mascota/${pet._id}`);
