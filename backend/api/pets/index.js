@@ -89,9 +89,13 @@ module.exports = async (req, res) => {
     if (req.method === 'PUT') {
       console.log('Body recibido en PUT /api/pets/:id:', req.body);
       try {
-        const updatedPet = await Pet.findByIdAndUpdate(id, req.body, { new: true });
-        if (!updatedPet) return res.status(404).json({ message: 'Mascota no encontrada' });
-        return res.status(200).json(updatedPet);
+        const pet = await Pet.findByIdAndUpdate(
+          id,
+          req.body,
+          { new: true, runValidators: true }
+        );
+        if (!pet) return res.status(404).json({ message: 'Mascota no encontrada' });
+        return res.status(200).json(pet);
       } catch (error) {
         return res.status(400).json({ error: error.message });
       }
