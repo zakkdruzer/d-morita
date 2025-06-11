@@ -4,8 +4,7 @@ import Input from '../ui/Input';
 import Select from '../ui/Select';
 import Button from '../ui/Button';
 import { PlusCircle, Check } from 'lucide-react';
-
-const API_BASE = import.meta.env.VITE_API_BASE;
+import { API_BASE } from '../../apiBase';
 
 const AddPetForm: React.FC = () => {
   const { addPet } = usePets();
