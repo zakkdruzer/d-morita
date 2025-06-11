@@ -5,6 +5,8 @@ import Select from '../ui/Select';
 import Button from '../ui/Button';
 import { PlusCircle, Check } from 'lucide-react';
 
+const API_BASE = import.meta.env.VITE_API_BASE;
+
 const AddPetForm: React.FC = () => {
   const { addPet } = usePets();
   const [formData, setFormData] = useState({
@@ -69,27 +71,37 @@ const AddPetForm: React.FC = () => {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!validate()) return;
-    
+
     setIsSubmitting(true);
-    
+
     const age = formData.age ? parseInt(formData.age, 10) : undefined;
-    
-    setTimeout(() => {
-      addPet({
-        ...formData,
-        age,
-        gender: formData.gender as any || undefined,
-        id: crypto.randomUUID(),
-        registrationDate: new Date().toISOString(),
+
+    try {
+      const res = await fetch(`${API_BASE}/api/pets`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...formData,
+          age,
+          gender: formData.gender || undefined,
+          registrationDate: new Date().toISOString(),
+        }),
       });
-      
+
+      if (!res.ok) {
+        const error = await res.json();
+        alert('Error al registrar mascota: ' + (error.error || res.statusText));
+        setIsSubmitting(false);
+        return;
+      }
+
       setIsSubmitting(false);
       setIsSuccess(true);
-      
+
       setTimeout(() => {
         setFormData({
           name: '',
@@ -108,7 +120,10 @@ const AddPetForm: React.FC = () => {
         });
         setIsSuccess(false);
       }, 2000);
-    }, 800);
+    } catch (err) {
+      alert('Error de red al registrar mascota');
+      setIsSubmitting(false);
+    }
   };
 
   const speciesOptions = [

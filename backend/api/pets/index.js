@@ -109,7 +109,7 @@ module.exports = async (req, res) => {
   }
 
   // /api/pets y /api/pets?name=...
-  if (req.url === '/' || req.url.startsWith('/?')) {
+  if (req.url === '' || req.url === '/' || req.url.startsWith('/?')) {
     if (req.method === 'GET') {
       const { name } = req.query;
       let pets;
@@ -121,6 +121,7 @@ module.exports = async (req, res) => {
       return res.status(200).json(pets);
     }
     if (req.method === 'POST') {
+      console.log('Intentando agregar mascota:', req.body);
       try {
         const newPet = new Pet(req.body);
         await newPet.save();
