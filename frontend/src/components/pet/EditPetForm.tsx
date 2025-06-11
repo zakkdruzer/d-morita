@@ -8,7 +8,7 @@ import { API_BASE } from '../../apiBase'; // Ajusta la ruta según corresponda
 
 const EditPetForm: React.FC = () => {
   const { id } = useParams<{ id: string }>();
-  const { pets, updatePet } = usePets();
+  const { pets } = usePets();
   const navigate = useNavigate();
 
   const petFromContext = pets.find((p) => p._id === id);
@@ -74,11 +74,23 @@ const EditPetForm: React.FC = () => {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (pet) {
-      updatePet({ ...pet, ...formData, age: Number(formData.age) });
-      navigate(`/mascota/${pet._id}`);
+      try {
+        const res = await fetch(`${API_BASE}/api/pets/${pet._id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ...formData, age: Number(formData.age) }),
+        });
+        if (res.ok) {
+          navigate(`/mascota/${pet._id}`);
+        } else {
+          alert('No se pudo actualizar la mascota.');
+        }
+      } catch {
+        alert('Error al actualizar la mascota.');
+      }
     }
   };
 
@@ -90,7 +102,6 @@ const EditPetForm: React.FC = () => {
     return <div className="p-8 text-center">Mascota no encontrada.</div>;
   }
 
-  // Opciones de select (puedes reutilizar las de AddPetForm)
   const speciesOptions = [
     { value: '', label: 'Seleccionar especie' },
     { value: 'Dog', label: 'Perro' },
