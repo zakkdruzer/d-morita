@@ -1,13 +1,16 @@
 import React, { useState } from 'react';
-import { usePets } from '../../context/PetContext';
 import Input from '../ui/Input';
 import Select from '../ui/Select';
 import Button from '../ui/Button';
 import { PlusCircle, Check } from 'lucide-react';
-import { API_BASE } from '../../apiBase';
+
+// URL base de tu backend desplegado en Render.
+// Desde aquí armamos la ruta completa hacia /api/pets
+const API_BASE = 'https://d-morita.onrender.com';
 
 const AddPetForm: React.FC = () => {
-  const { addPet } = usePets();
+  // Estado del formulario: aquí se guardan temporalmente
+  // los datos que el usuario escribe.
   const [formData, setFormData] = useState({
     name: '',
     species: '',
@@ -22,17 +25,29 @@ const AddPetForm: React.FC = () => {
     email: '',
     address: '',
     medicalHistory: '',
-    
   });
-  
+
+  // Aquí guardamos los errores de validación del formulario.
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  // Sirve para desactivar el botón mientras se envía la información.
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Sirve para mostrar mensaje visual de éxito.
   const [isSuccess, setIsSuccess] = useState(false);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  // Actualiza cualquier input de texto normal.
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
-    
+
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+
+    // Si ese campo tenía error, lo limpiamos al volver a escribir.
     if (errors[name]) {
       setErrors((prev) => {
         const newErrors = { ...prev };
@@ -42,9 +57,13 @@ const AddPetForm: React.FC = () => {
     }
   };
 
+  // Actualiza valores de selects personalizados.
   const handleSelectChange = (name: string) => (value: string) => {
-    setFormData((prev) => ({ ...prev, [name]: value }));
-    
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+
     if (errors[name]) {
       setErrors((prev) => {
         const newErrors = { ...prev };
@@ -54,35 +73,54 @@ const AddPetForm: React.FC = () => {
     }
   };
 
+  // Revisa que los campos obligatorios estén completos
+  // antes de mandar datos al backend.
   const validate = (): boolean => {
     const newErrors: Record<string, string> = {};
-    
-    if (!formData.name.trim()) newErrors.name = 'El nombre de la mascota es requerido';
-    if (!formData.species.trim()) newErrors.species = 'La especie es requerida';
-    if (!formData.ownerName.trim()) newErrors.ownerName = 'El nombre del dueño es requerido';
-    if (!formData.ownerContact.trim()) newErrors.ownerContact = 'El contacto del dueño es requerido';
-    
+
+    if (!formData.name.trim()) {
+      newErrors.name = 'El nombre de la mascota es requerido';
+    }
+
+    if (!formData.species.trim()) {
+      newErrors.species = 'La especie es requerida';
+    }
+
+    if (!formData.ownerName.trim()) {
+      newErrors.ownerName = 'El nombre del dueño es requerido';
+    }
+
+    if (!formData.ownerContact.trim()) {
+      newErrors.ownerContact = 'El contacto del dueño es requerido';
+    }
+
     if (formData.age && isNaN(Number(formData.age))) {
       newErrors.age = 'La edad debe ser un número';
     }
-    
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
+  // Se ejecuta cuando el usuario envía el formulario.
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    // Si la validación falla, detenemos el envío.
     if (!validate()) return;
 
     setIsSubmitting(true);
 
+    // Convertimos la edad a número, porque desde el input llega como texto.
     const age = formData.age ? parseInt(formData.age, 10) : undefined;
 
     try {
-      const res = await fetch(`${API_BASE}/pets`, {
+      // Enviamos la mascota al backend.
+      const res = await fetch(`${API_BASE}/api/pets`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+        },
         body: JSON.stringify({
           ...formData,
           age,
@@ -91,16 +129,19 @@ const AddPetForm: React.FC = () => {
         }),
       });
 
+      // Si el backend respondió con error, intentamos mostrar el mensaje real.
       if (!res.ok) {
-        const error = await res.json();
-        alert('Error al registrar mascota: ' + (error.error || res.statusText));
+        const error = await res.json().catch(() => null);
+        alert('Error al registrar mascota: ' + (error?.error || res.statusText));
         setIsSubmitting(false);
         return;
       }
 
+      // Si todo salió bien, mostramos estado de éxito.
       setIsSubmitting(false);
       setIsSuccess(true);
 
+      // Reiniciamos el formulario después de guardar.
       setTimeout(() => {
         setFormData({
           name: '',
@@ -112,14 +153,16 @@ const AddPetForm: React.FC = () => {
           chipNumber: '',
           ownerName: '',
           ownerContact: '',
-          medicalHistory: '',
           rut: '',
           email: '',
           address: '',
+          medicalHistory: '',
         });
         setIsSuccess(false);
       }, 2000);
     } catch (err) {
+      // Este catch normalmente entra si hay problema de red,
+      // CORS, backend caído o URL incorrecta.
       alert('Error de red al registrar mascota');
       setIsSubmitting(false);
     }
@@ -140,20 +183,20 @@ const AddPetForm: React.FC = () => {
     { value: 'macho', label: 'Macho' },
     { value: 'hembra', label: 'Hembra' },
     { value: 'esterilizado', label: 'Esterilizada' },
-    { value: 'castrado', label: 'Castrado' }, // Nueva opción agregada
+    { value: 'castrado', label: 'Castrado' },
   ];
 
   return (
     <div className="max-w-3xl mx-auto bg-white rounded-lg shadow-md p-6 animate-fadeIn">
       <h2 className="text-xl font-semibold mb-6">Agregar Nueva Mascota</h2>
-      
+
       <form onSubmit={handleSubmit}>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6">
           <div className="col-span-2 mb-4">
             <h3 className="font-medium text-gray-700 mb-2">Información de la Mascota</h3>
             <div className="w-full h-px bg-gray-200"></div>
           </div>
-          
+
           <Input
             label="Nombre de la Mascota"
             name="name"
@@ -162,7 +205,7 @@ const AddPetForm: React.FC = () => {
             error={errors.name}
             required
           />
-          
+
           <Select
             label="Especie"
             options={speciesOptions}
@@ -171,7 +214,7 @@ const AddPetForm: React.FC = () => {
             error={errors.species}
             required
           />
-          
+
           <Input
             label="Raza"
             name="breed"
@@ -179,7 +222,7 @@ const AddPetForm: React.FC = () => {
             onChange={handleChange}
             placeholder="Opcional"
           />
-          
+
           <Input
             label="Edad (Años)"
             name="age"
@@ -190,7 +233,7 @@ const AddPetForm: React.FC = () => {
             error={errors.age}
             placeholder="Opcional"
           />
-          
+
           <Input
             label="Color"
             name="color"
@@ -198,7 +241,7 @@ const AddPetForm: React.FC = () => {
             onChange={handleChange}
             placeholder="Opcional"
           />
-          
+
           <Select
             label="Género"
             options={genderOptions}
@@ -214,12 +257,12 @@ const AddPetForm: React.FC = () => {
             onChange={handleChange}
             placeholder="Opcional"
           />
-          
+
           <div className="col-span-2 mt-4 mb-4">
             <h3 className="font-medium text-gray-700 mb-2">Información del Dueño</h3>
             <div className="w-full h-px bg-gray-200"></div>
           </div>
-          
+
           <Input
             label="Nombre del Dueño"
             name="ownerName"
@@ -228,7 +271,7 @@ const AddPetForm: React.FC = () => {
             error={errors.ownerName}
             required
           />
-          
+
           <Input
             label="Número de Contacto"
             name="ownerContact"
@@ -237,7 +280,7 @@ const AddPetForm: React.FC = () => {
             error={errors.ownerContact}
             required
           />
-          
+
           <Input
             label="RUT"
             name="rut"
@@ -262,7 +305,7 @@ const AddPetForm: React.FC = () => {
             onChange={handleChange}
             placeholder="Opcional"
           />
-          
+
           <div className="col-span-2">
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Historial Médico
@@ -276,7 +319,7 @@ const AddPetForm: React.FC = () => {
               placeholder="Opcional: Agregar historial médico relevante"
             />
           </div>
-          
+
           <div className="col-span-2 mt-6 flex flex-col items-center">
             <Button
               type="submit"
@@ -288,6 +331,7 @@ const AddPetForm: React.FC = () => {
               <PlusCircle size={18} className="mr-2" />
               Registrar Mascota
             </Button>
+
             {isSuccess && (
               <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded-md text-green-700 flex items-center transition-opacity duration-500">
                 <Check size={20} className="mr-2" />
