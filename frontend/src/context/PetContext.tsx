@@ -1,10 +1,42 @@
 import React, { createContext, useContext, useState, ReactNode } from 'react';
 import { Pet } from '../../types';
 
-// Mock pet data
+// =========================================================
+// Tipo del contexto
+// =========================================================
+// Aquí definimos todo lo que otros componentes pueden usar
+// cuando llaman al hook usePets().
+export interface PetContextType {
+  pets: Pet[];
+
+  // Busca mascotas por texto y por campo.
+  searchPets: (query: string, field: string) => Pet[];
+
+  // Agrega una nueva mascota al estado local.
+  addPet: (pet: Omit<Pet, '_id' | 'registrationDate'>) => void;
+
+  // Reemplaza una mascota existente por su versión actualizada.
+  updatePet: (pet: Pet) => void;
+
+  // Elimina una mascota completa por id.
+  deletePet: (petId: string) => void;
+
+  // Elimina una consulta específica dentro de una mascota.
+  deleteConsultation: (petId: string, consultationId: string) => void;
+}
+
+// =========================================================
+// Contexto React
+// =========================================================
+const PetContext = createContext<PetContextType | undefined>(undefined);
+
+// =========================================================
+// Datos iniciales de ejemplo
+// =========================================================
+// Esto sirve como mock local mientras no cargues todo desde backend.
 const initialPets: Pet[] = [
   {
-    id: 'P001',
+    _id: 'P001',
     name: 'Max',
     species: 'Dog',
     breed: 'Golden Retriever',
@@ -21,29 +53,29 @@ const initialPets: Pet[] = [
     registrationDate: '2023-01-15',
     consultations: [
       {
-        id: 'C001',
+        _id: 'C001',
         fecha: '2024-06-01',
         anamnesis: 'Pérdida de apetito',
         examenFisico: 'Temperatura normal',
         preDiagnostico: 'Gastroenteritis leve',
         observaciones: 'Se observa decaimiento',
         tratamientos: 'Dieta blanda',
-        recomendacion: 'Control en 7 días'
+        recomendacion: 'Control en 7 días',
       },
       {
-        id: 'C002',
+        _id: 'C002',
         fecha: '2024-06-10',
         anamnesis: 'Cojea pata trasera',
         examenFisico: 'Inflamación leve',
         preDiagnostico: 'Esguince',
         observaciones: '',
         tratamientos: 'Reposo y antiinflamatorio',
-        recomendacion: 'Revisar en 10 días'
-      }
-    ]
+        recomendacion: 'Revisar en 10 días',
+      },
+    ],
   },
   {
-    id: 'P002',
+    _id: 'P002',
     name: 'Luna',
     species: 'Cat',
     breed: 'Siamese',
@@ -60,19 +92,19 @@ const initialPets: Pet[] = [
     registrationDate: '2023-03-22',
     consultations: [
       {
-        id: 'C003',
+        _id: 'C003',
         fecha: '2024-05-15',
         anamnesis: 'Estornudos frecuentes',
         examenFisico: 'Mucosa nasal húmeda',
         preDiagnostico: 'Rinitis',
-        observaciones: '',
+        observaciones: 'Sin fiebre',
         tratamientos: 'Antihistamínicos',
-        recomendacion: 'Evitar polvo'
-      }
-    ]
+        recomendacion: 'Evitar polvo',
+      },
+    ],
   },
   {
-    id: 'P003',
+    _id: 'P003',
     name: 'Buddy',
     species: 'Dog',
     breed: 'Labrador',
@@ -89,93 +121,126 @@ const initialPets: Pet[] = [
     registrationDate: '2022-11-05',
     consultations: [
       {
-        id: 'C004',
+        _id: 'C004',
         fecha: '2024-04-20',
         anamnesis: 'Dificultad para caminar',
         examenFisico: 'Dolor en cadera',
         preDiagnostico: 'Displasia de cadera',
         observaciones: 'Se recomienda control mensual',
         tratamientos: 'Antiinflamatorios',
-        recomendacion: 'Rehabilitación física'
-      }
-    ]
-  }
+        recomendacion: 'Rehabilitación física',
+      },
+    ],
+  },
 ];
 
-export interface PetContextType {
-  pets: Pet[];
-  searchPets: (query: string, field: string) => Pet[]; // o void si solo actualiza un estado
-  addPet: (pet: Pet) => void;
-  updatePet: (pet: Pet) => void;
-  deleteConsultation: (petId: string, consultationId: string) => void; // <-- Add this line
-}
-
-const PetContext = createContext<PetContextType | undefined>(undefined);
-
+// =========================================================
+// Provider del contexto
+// =========================================================
 export const PetProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+  // Estado global de mascotas disponible para toda la app.
   const [pets, setPets] = useState<Pet[]>(initialPets);
 
-  const addPet = (petData: Omit<Pet, 'id' | 'registrationDate'>) => {
+  // ---------------------------------------------------------
+  // Agregar mascota
+  // ---------------------------------------------------------
+  // Crea una nueva mascota en el estado local.
+  const addPet = (petData: Omit<Pet, '_id' | 'registrationDate'>) => {
     const newPet: Pet = {
       ...petData,
-      id: `P${String(pets.length + 1).padStart(3, '0')}`,
+      _id: `P${String(pets.length + 1).padStart(3, '0')}`,
       registrationDate: new Date().toISOString().split('T')[0],
-      consultations: [], // <-- Asegúrate de agregar esto también
+      consultations: petData.consultations || [],
     };
-    
-    setPets([...pets, newPet]);
+
+    setPets((prev) => [...prev, newPet]);
   };
 
+  // ---------------------------------------------------------
+  // Actualizar mascota
+  // ---------------------------------------------------------
+  // Reemplaza una mascota existente por su nueva versión.
   const updatePet = (updatedPet: Pet) => {
-    setPets(pets.map(pet => pet.id === updatedPet.id ? updatedPet : pet));
+    setPets((prevPets) =>
+      prevPets.map((pet) => (pet._id === updatedPet._id ? updatedPet : pet))
+    );
   };
 
+  // ---------------------------------------------------------
+  // Eliminar mascota
+  // ---------------------------------------------------------
+  // Esta función corrige el error:
+  // "La propiedad 'deletePet' no existe en el tipo 'PetContextType'."
+  const deletePet = (petId: string) => {
+    setPets((prevPets) => prevPets.filter((pet) => pet._id !== petId));
+  };
+
+  // ---------------------------------------------------------
+  // Eliminar consulta
+  // ---------------------------------------------------------
+  // Elimina una consulta específica dentro de una mascota.
   const deleteConsultation = (petId: string, consultationId: string) => {
-    setPets(prevPets =>
-      prevPets.map(pet =>
-        pet.id === petId
+    setPets((prevPets) =>
+      prevPets.map((pet) =>
+        pet._id === petId
           ? {
               ...pet,
-              consultations: (pet.consultations || []).filter(cons => cons.id !== consultationId)
+              consultations: (pet.consultations || []).filter(
+                (cons) => cons._id !== consultationId
+              ),
             }
           : pet
       )
     );
   };
 
-  const searchPets = (query: string, field: string) => {
+  // ---------------------------------------------------------
+  // Buscar mascotas
+  // ---------------------------------------------------------
+  // Permite buscar por nombre, id u otro campo simple.
+  const searchPets = (query: string, field: string): Pet[] => {
     const lowerQuery = query.toLowerCase();
+
     return pets.filter((pet) => {
       if (field === 'both') {
         const name = pet.name?.toString().toLowerCase() || '';
-        const id = pet.id?.toString().toLowerCase() || '';
+        const id = pet._id?.toString().toLowerCase() || '';
         return name.includes(lowerQuery) || id.includes(lowerQuery);
-      } else {
-        const value = pet[field as keyof typeof pet];
-        return value && value.toString().toLowerCase().includes(lowerQuery);
       }
+
+      const value = pet[field as keyof Pet];
+
+      return value ? value.toString().toLowerCase().includes(lowerQuery) : false;
     });
   };
 
+  // Exponemos el estado y las funciones al resto de la app.
   return (
-    <PetContext.Provider value={{
-      pets,
-      searchPets,
-      addPet,
-      updatePet,
-      deleteConsultation,
-    }}>
+    <PetContext.Provider
+      value={{
+        pets,
+        searchPets,
+        addPet,
+        updatePet,
+        deletePet,
+        deleteConsultation,
+      }}
+    >
       {children}
     </PetContext.Provider>
   );
 };
 
+// =========================================================
+// Hook personalizado
+// =========================================================
+// Facilita el uso del contexto en otros componentes.
 export const usePets = (): PetContextType => {
   const context = useContext(PetContext);
+
   if (context === undefined) {
     throw new Error('usePets must be used within a PetProvider');
   }
+
   return context;
 };
-
-// (Component usage example removed to avoid unused variable errors)

@@ -5,7 +5,7 @@ export interface User {
 }
 
 export interface Consultation {
-  id: string;
+  _id?: string;
   fecha?: string;
   anamnesis?: string;
   examenFisico?: string;
@@ -13,25 +13,33 @@ export interface Consultation {
   observaciones?: string;
   tratamientos?: string;
   recomendacion?: string;
+  createdAt?: string;
+  updatedAt?: string;
+  createdBy?: string | { _id?: string; username?: string; email?: string };
+  updatedBy?: string | { _id?: string; username?: string; email?: string };
 }
 
 export interface Pet {
-  id: string;
+  _id?: string;
   name: string;
   species: string;
   breed?: string;
   age?: number;
   color?: string;
-  gender?: 'macho' | 'hembra' | 'esterilizado' | undefined;
+  gender?: 'macho' | 'hembra' | 'esterilizado' | 'castrado';
   chipNumber?: string;
   ownerName: string;
   ownerContact: string;
-  rut?: string;      // Nuevo campo
-  email?: string;    // Nuevo campo
-  address?: string; 
+  rut?: string;
+  email?: string;
+  address?: string;
   medicalHistory?: string;
-  registrationDate: string;
+  registrationDate?: string;
   consultations?: Consultation[];
+  createdAt?: string;
+  updatedAt?: string;
+  createdBy?: string | { _id?: string; username?: string; email?: string };
+  updatedBy?: string | { _id?: string; username?: string; email?: string };
 }
 
 export interface AuthState {
