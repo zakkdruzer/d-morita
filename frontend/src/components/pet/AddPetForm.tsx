@@ -80,7 +80,7 @@ const AddPetForm: React.FC = () => {
     const age = formData.age ? parseInt(formData.age, 10) : undefined;
 
     try {
-      const res = await fetch(`${API_BASE}/api/pets`, {
+      const res = await fetch(`${API_BASE}/pets`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
