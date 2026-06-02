@@ -4,9 +4,12 @@ const User = require('../models/User');
 
 const router = express.Router();
 
-// Función que crea el token JWT.
-// Guarda dentro del token algunos datos básicos del usuario.
+// Crear token JWT con datos básicos del usuario
 const createToken = (user) => {
+  if (!process.env.JWT_SECRET) {
+    throw new Error('JWT_SECRET no está configurado');
+  }
+
   return jwt.sign(
     {
       id: user._id,
@@ -20,24 +23,22 @@ const createToken = (user) => {
   );
 };
 
-// Middleware para proteger rutas.
-// Revisa si viene un token en el header Authorization: Bearer <token>
+// Middleware para proteger rutas privadas
 const authMiddleware = (req, res, next) => {
-  const authHeader = req.headers.authorization;
-
-  // Si no viene token, devolvemos error 401.
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    return res.status(401).json({ error: 'Token no proporcionado' });
-  }
-
-  // Extraemos solo el token sin el texto "Bearer ".
-  const token = authHeader.split(' ')[1];
-
   try {
-    // Verificamos que el token sea válido.
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const authHeader = req.headers.authorization;
 
-    // Guardamos la info decodificada en req.user para usarla después.
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ error: 'Token no proporcionado' });
+    }
+
+    const token = authHeader.split(' ')[1];
+
+    if (!process.env.JWT_SECRET) {
+      return res.status(500).json({ error: 'JWT_SECRET no configurado' });
+    }
+
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
     req.user = decoded;
 
     next();
@@ -46,43 +47,40 @@ const authMiddleware = (req, res, next) => {
   }
 };
 
-// Ruta POST /api/auth/login
-// Recibe username y password, valida usuario y responde con token.
+// POST /api/auth/login
 router.post('/login', async (req, res) => {
   try {
     const { username, password } = req.body;
 
-    // Validación básica de entrada.
     if (!username || !password) {
-      return res.status(400).json({ error: 'Usuario y contraseña son requeridos' });
+      return res.status(400).json({
+        error: 'Usuario y contraseña son requeridos',
+      });
     }
 
-    // Buscamos el usuario por username.
     const user = await User.findOne({ username: username.trim() });
 
-    // Si no existe, devolvemos credenciales inválidas.
     if (!user) {
       return res.status(401).json({ error: 'Credenciales inválidas' });
     }
 
-    // Comparamos password ingresado con el hash guardado.
     const isMatch = await user.comparePassword(password);
 
     if (!isMatch) {
       return res.status(401).json({ error: 'Credenciales inválidas' });
     }
 
-    // Si todo está bien, creamos el token.
     const token = createToken(user);
 
-    // Respondemos con token + datos del usuario.
-    return res.json({
+    return res.status(200).json({
       token,
       user: {
         id: user._id,
         username: user.username,
         email: user.email,
         role: user.role,
+        createdAt: user.createdAt,
+        updatedAt: user.updatedAt,
       },
     });
   } catch (error) {
@@ -91,22 +89,22 @@ router.post('/login', async (req, res) => {
   }
 });
 
-// Ruta GET /api/auth/me
-// Sirve para saber quién está autenticado actualmente.
+// GET /api/auth/me
 router.get('/me', authMiddleware, async (req, res) => {
   try {
-    // req.user.id viene del token validado por authMiddleware.
     const user = await User.findById(req.user.id).select('-password');
 
     if (!user) {
       return res.status(404).json({ error: 'Usuario no encontrado' });
     }
 
-    return res.json({
+    return res.status(200).json({
       id: user._id,
       username: user.username,
       email: user.email,
       role: user.role,
+      createdAt: user.createdAt,
+      updatedAt: user.updatedAt,
     });
   } catch (error) {
     console.error('Error en /me:', error);
@@ -114,5 +112,4 @@ router.get('/me', authMiddleware, async (req, res) => {
   }
 });
 
-// Exportamos el router y también el middleware para proteger otras rutas.
 module.exports = { router, authMiddleware };

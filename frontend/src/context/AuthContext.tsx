@@ -24,7 +24,7 @@ const initialState: AuthState = {
 };
 
 // URL base del backend en Render.
-const API_BASE = 'https://d-morita.onrender.com';
+const API_BASE = 'https://d-morita.onrender.com/api';
 
 // Reducer que maneja todos los cambios del estado auth.
 const authReducer = (state: AuthState, action: AuthAction): AuthState => {
@@ -98,7 +98,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
       try {
         // Validamos el token preguntando al backend quién es el usuario actual.
-        const res = await fetch(`${API_BASE}/api/auth/me`, {
+        const res = await fetch(`${API_BASE}/auth/me`, {
           headers: {
             Authorization: `Bearer ${token}`,
           },
@@ -137,7 +137,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
     try {
       // Enviamos username y password al backend.
-      const res = await fetch(`${API_BASE}/api/auth/login`, {
+      const res = await fetch(`${API_BASE}/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username, password }),

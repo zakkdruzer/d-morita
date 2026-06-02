@@ -1,66 +1,85 @@
 require('dotenv').config();
+
 const mongoose = require('mongoose');
 const express = require('express');
 const cors = require('cors');
 
-// Rutas existentes de mascotas.
 const petsRouter = require('./api/pets');
-
-// Modelo Pet para crear índices y revisar conexión.
+const { router: authRouter } = require('./api/auth');
 const Pet = require('./models/Pet');
 
-// Nuevas rutas de autenticación.
-const { router: authRouter } = require('./api/auth');
+const app = express();
 
-// Conectamos a MongoDB Atlas.
+// Validación básica de variables críticas
+if (!process.env.MONGODB_URI) {
+  console.error('❌ Falta la variable de entorno MONGODB_URI');
+  process.exit(1);
+}
+
+if (!process.env.JWT_SECRET) {
+  console.error('❌ Falta la variable de entorno JWT_SECRET');
+  process.exit(1);
+}
+
+// Middlewares
+app.use(cors());
+app.use(express.json());
+
+// Ruta de prueba
+app.get('/', (req, res) => {
+  res.json({
+    ok: true,
+    message: 'API de El Diván de Morita funcionando',
+    db: mongoose.connection.name || 'sin conexión todavía',
+  });
+});
+
+// Ruta simple de healthcheck
+app.get('/health', (req, res) => {
+  res.json({
+    ok: true,
+    mongoState: mongoose.connection.readyState,
+  });
+});
+
+// Rutas principales
+app.use('/api/auth', authRouter);
+app.use('/api/pets', petsRouter);
+
+// Ruta no encontrada
+app.use((req, res) => {
+  res.status(404).json({ error: 'Ruta no encontrada' });
+});
+
+const PORT = process.env.PORT || 3000;
+
+// Conexión a MongoDB + arranque del servidor
 mongoose
   .connect(process.env.MONGODB_URI, {
     retryWrites: true,
     w: 'majority',
   })
   .then(async () => {
-    console.log('Conectado a MongoDB');
+    console.log('✅ Conectado a MongoDB Atlas');
+    console.log('📂 Base de datos actual:', mongoose.connection.name);
 
-    // Índices para mejorar búsquedas y evitar duplicados en algunos campos.
-    await Pet.collection.createIndex({ name: 1 });
-    await Pet.collection.createIndex({ ownerName: 1 });
-    await Pet.collection.createIndex({ chipNumber: 1 }, { unique: true, sparse: true });
-    await Pet.collection.createIndex({ rut: 1 }, { unique: true, sparse: true });
+    try {
+      await Pet.collection.createIndex({ name: 1 });
+      await Pet.collection.createIndex({ ownerName: 1 });
+      await Pet.collection.createIndex({ chipNumber: 1 }, { unique: true, sparse: true });
+      await Pet.collection.createIndex({ rut: 1 }, { unique: true, sparse: true });
+
+      const count = await Pet.countDocuments({});
+      console.log(`📊 Total mascotas: ${count}`);
+    } catch (error) {
+      console.error('⚠️ Error creando índices o contando mascotas:', error);
+    }
+
+    app.listen(PORT, () => {
+      console.log(`🚀 Servidor escuchando en el puerto ${PORT}`);
+    });
   })
-  .catch((err) => console.error('Error de conexión:', err));
-
-// Cuando Mongo se conecta, mostramos info de prueba.
-mongoose.connection.once('open', () => {
-  console.log('✅ Conectado a MongoDB Atlas');
-
-  Pet.countDocuments({})
-    .then((count) => console.log(`📊 Total mascotas: ${count}`))
-    .catch((err) => console.error('Error contando mascotas:', err));
-});
-
-const app = express();
-
-// Permitimos solicitudes desde el frontend.
-app.use(
-  cors({
-    origin: true,
-    credentials: true,
-  })
-);
-
-// Permite leer JSON enviado desde el frontend.
-app.use(express.json());
-
-// Registramos rutas:
-// /api/auth/login
-// /api/auth/me
-app.use('/api/auth', authRouter);
-
-// Registramos rutas existentes de mascotas.
-app.use('/api/pets', petsRouter);
-
-// Iniciamos servidor.
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log(`Servidor escuchando en el puerto ${PORT}`);
-});
+  .catch((err) => {
+    console.error('❌ Error de conexión a MongoDB:', err);
+    process.exit(1);
+  });
