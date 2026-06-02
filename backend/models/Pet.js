@@ -1,13 +1,17 @@
 const mongoose = require('mongoose');
 
-// Schema de cada consulta médica dentro de una mascota.
-// Cada consulta queda embebida dentro del documento Pet.
+// =========================================================
+// Schema de cada consulta médica
+// =========================================================
+// Cada consulta se guarda dentro del arreglo "consultations"
+// del documento principal de la mascota.
 const ConsultationSchema = new mongoose.Schema(
   {
-    // Fecha clínica o fecha escrita por el veterinario.
+    // Fecha clínica que ingresa el usuario en el formulario.
+    // Esta fecha es distinta de createdAt.
     fecha: String,
 
-    // Campos del contenido de la consulta.
+    // Contenido clínico de la consulta.
     anamnesis: String,
     examenFisico: String,
     preDiagnostico: String,
@@ -22,59 +26,109 @@ const ConsultationSchema = new mongoose.Schema(
       ref: 'User',
     },
 
-    // Último usuario que modificó esta consulta.
+    // Usuario que realizó la última modificación.
     updatedBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
     },
   },
   {
-    // Mantiene un _id propio por cada consulta.
+    // Mantiene un _id individual para cada consulta.
     _id: true,
 
     // Mongoose agrega automáticamente:
     // - createdAt
     // - updatedAt
+    // cada vez que se crea o actualiza la consulta.
     timestamps: true,
   }
 );
 
-// Schema principal de la mascota.
+// =========================================================
+// Schema principal de la mascota
+// =========================================================
 const PetSchema = new mongoose.Schema(
   {
     // Datos básicos de la mascota.
-    name: { type: String, required: true },
-    species: { type: String, required: true },
-    breed: String,
-    age: Number,
-    color: String,
-    gender: String,
-    chipNumber: String,
+    name: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+    species: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+    breed: {
+      type: String,
+      trim: true,
+    },
+    age: {
+      type: Number,
+      min: 0,
+    },
+    color: {
+      type: String,
+      trim: true,
+    },
+    gender: {
+      type: String,
+      trim: true,
+    },
+    chipNumber: {
+      type: String,
+      trim: true,
+    },
 
-    // Datos del tutor / dueño.
-    ownerName: { type: String, required: true },
-    ownerContact: { type: String, required: true },
-    rut: String,
-    email: String,
-    address: String,
+    // Datos del tutor o dueño.
+    ownerName: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+    ownerContact: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+    rut: {
+      type: String,
+      trim: true,
+    },
+    email: {
+      type: String,
+      trim: true,
+      lowercase: true,
+    },
+    address: {
+      type: String,
+      trim: true,
+    },
 
-    // Historial clínico general.
-    medicalHistory: String,
+    // Historial médico general de la mascota.
+    medicalHistory: {
+      type: String,
+      trim: true,
+    },
 
-    // Si quieres mantener una fecha manual visible para negocio.
-    // Ojo: esto es distinto de createdAt.
-    registrationDate: String,
+    // Fecha manual de registro visible para negocio o administración.
+    // No reemplaza a createdAt.
+    registrationDate: {
+      type: String,
+      trim: true,
+    },
 
     // Arreglo de consultas médicas embebidas.
     consultations: [ConsultationSchema],
 
-    // Usuario que creó esta mascota.
+    // Usuario que creó la mascota.
     createdBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
     },
 
-    // Último usuario que modificó esta mascota.
+    // Usuario que hizo la última modificación de la mascota.
     updatedBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
@@ -84,9 +138,20 @@ const PetSchema = new mongoose.Schema(
     // Mongoose agrega automáticamente:
     // - createdAt
     // - updatedAt
+    // al documento principal de la mascota.
     timestamps: true,
   }
 );
 
-// Exportamos el modelo para usarlo en las rutas.
+// =========================================================
+// Índices opcionales
+// =========================================================
+// Estos ayudan a búsquedas comunes y pueden alinearse
+// con los índices que creas en server.js.
+PetSchema.index({ name: 1 });
+PetSchema.index({ ownerName: 1 });
+PetSchema.index({ chipNumber: 1 }, { unique: true, sparse: true });
+PetSchema.index({ rut: 1 }, { unique: true, sparse: true });
+
+// Exportamos el modelo "Pet" para usarlo en rutas y controladores.
 module.exports = mongoose.model('Pet', PetSchema);
