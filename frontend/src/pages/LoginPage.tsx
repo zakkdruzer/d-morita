@@ -5,73 +5,71 @@ import Button from '../components/ui/Button';
 import { Layers, LogIn } from 'lucide-react';
 
 const LoginPage: React.FC = () => {
+  // Tomamos desde el contexto la función login y el estado actual.
   const { login, isLoading, error } = useAuth();
+
+  // Estados locales del formulario.
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
 
+  // Cuando se envía el formulario, llamamos al login real.
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     await login(username, password);
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-teal-500 to-indigo-600 flex items-center justify-center px-4 py-12 sm:px-6 lg:px-8">
-      <div className="w-full max-w-md space-y-8 bg-white p-8 rounded-lg shadow-xl">
-        <div className="text-center">
-          <div className="flex justify-center">
-            <Layers className="h-12 w-12 text-teal-600" />
+    <div className="min-h-screen bg-gradient-to-br from-teal-50 to-cyan-100 flex items-center justify-center p-4">
+      <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-8">
+        <div className="flex items-center justify-center mb-6">
+          <div className="bg-teal-600 p-3 rounded-full">
+            <Layers className="text-white" size={28} />
           </div>
-          <h2 className="mt-4 text-3xl font-bold tracking-tight text-gray-900">
-            El Diván de Morita
-          </h2>
-          <p className="mt-2 text-sm text-gray-600">
-            Inicia sesión para gestionar el registro de mascotas
-          </p>
         </div>
-        
-        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-          {error && (
-            <div className="p-3 bg-red-50 text-red-700 text-sm rounded-md border border-red-200">
-              {error === 'Invalid username or password' ? 'Usuario o contraseña inválidos' : 'Ocurrió un error durante el inicio de sesión'}
-            </div>
-          )}
-          
+
+        <h1 className="text-2xl font-bold text-center text-gray-800 mb-2">
+          Iniciar Sesión
+        </h1>
+
+        <p className="text-center text-gray-500 mb-6">
+          Inicia sesión para gestionar el registro de mascotas
+        </p>
+
+        <form onSubmit={handleSubmit} className="space-y-4">
           <Input
             label="Usuario"
-            type="text"
+            name="username"
             value={username}
             onChange={(e) => setUsername(e.target.value)}
             required
-            autoFocus
           />
-          
+
           <Input
             label="Contraseña"
+            name="password"
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
           />
-          
-          <div>
-            <Button
-              type="submit"
-              variant="primary"
-              fullWidth
-              isLoading={isLoading}
-              disabled={isLoading || !username || !password}
-              className="group relative"
-            >
-              <span className="absolute inset-y-0 left-0 flex items-center pl-3">
-                <LogIn className="h-5 w-5 text-teal-50 group-hover:text-white" aria-hidden="true" />
-              </span>
-              <span className="ml-4">Iniciar Sesión</span>
-            </Button>
-          </div>
-          
-          <div className="text-center text-sm text-gray-600">
-            
-          </div>
+
+          {/* Si el backend responde error, lo mostramos aquí */}
+          {error && (
+            <div className="text-red-600 text-sm bg-red-50 border border-red-200 rounded-md p-3">
+              {error}
+            </div>
+          )}
+
+          <Button
+            type="submit"
+            variant="primary"
+            fullWidth
+            isLoading={isLoading}
+            disabled={isLoading}
+          >
+            <LogIn size={18} className="mr-2" />
+            Ingresar
+          </Button>
         </form>
       </div>
     </div>
