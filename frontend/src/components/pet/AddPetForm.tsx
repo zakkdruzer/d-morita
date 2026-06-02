@@ -4,13 +4,11 @@ import Select from '../ui/Select';
 import Button from '../ui/Button';
 import { PlusCircle, Check } from 'lucide-react';
 
-// URL base de tu backend desplegado en Render.
-// Desde aquí armamos la ruta completa hacia /api/pets
+// Backend desplegado en Render.
+// El endpoint real de creación queda en: /api/pets
 const API_BASE = 'https://d-morita.onrender.com';
 
 const AddPetForm: React.FC = () => {
-  // Estado del formulario: aquí se guardan temporalmente
-  // los datos que el usuario escribe.
   const [formData, setFormData] = useState({
     name: '',
     species: '',
@@ -27,27 +25,17 @@ const AddPetForm: React.FC = () => {
     medicalHistory: '',
   });
 
-  // Aquí guardamos los errores de validación del formulario.
   const [errors, setErrors] = useState<Record<string, string>>({});
-
-  // Sirve para desactivar el botón mientras se envía la información.
   const [isSubmitting, setIsSubmitting] = useState(false);
-
-  // Sirve para mostrar mensaje visual de éxito.
   const [isSuccess, setIsSuccess] = useState(false);
 
-  // Actualiza cualquier input de texto normal.
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
     const { name, value } = e.target;
 
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
+    setFormData((prev) => ({ ...prev, [name]: value }));
 
-    // Si ese campo tenía error, lo limpiamos al volver a escribir.
     if (errors[name]) {
       setErrors((prev) => {
         const newErrors = { ...prev };
@@ -57,12 +45,8 @@ const AddPetForm: React.FC = () => {
     }
   };
 
-  // Actualiza valores de selects personalizados.
   const handleSelectChange = (name: string) => (value: string) => {
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
+    setFormData((prev) => ({ ...prev, [name]: value }));
 
     if (errors[name]) {
       setErrors((prev) => {
@@ -73,8 +57,6 @@ const AddPetForm: React.FC = () => {
     }
   };
 
-  // Revisa que los campos obligatorios estén completos
-  // antes de mandar datos al backend.
   const validate = (): boolean => {
     const newErrors: Record<string, string> = {};
 
@@ -98,38 +80,70 @@ const AddPetForm: React.FC = () => {
       newErrors.age = 'La edad debe ser un número';
     }
 
+    // El validador de MongoDB pide entre 8 y 15 caracteres
+    // permitiendo números, espacios, +, - y paréntesis.
+    if (
+      formData.ownerContact &&
+      !/^[0-9+\-\s()]{8,15}$/.test(formData.ownerContact)
+    ) {
+      newErrors.ownerContact =
+        'El contacto debe tener entre 8 y 15 caracteres válidos';
+    }
+
+    // Si hay email, verificamos formato básico.
+    if (
+      formData.email &&
+      !/^.+@.+\..+$/.test(formData.email)
+    ) {
+      newErrors.email = 'El email no tiene un formato válido';
+    }
+
+    // Si hay edad, verificamos rango permitido por Atlas.
+    if (formData.age) {
+      const ageNumber = Number(formData.age);
+      if (ageNumber < 0 || ageNumber > 50) {
+        newErrors.age = 'La edad debe estar entre 0 y 50';
+      }
+    }
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-  // Se ejecuta cuando el usuario envía el formulario.
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Si la validación falla, detenemos el envío.
     if (!validate()) return;
 
     setIsSubmitting(true);
 
-    // Convertimos la edad a número, porque desde el input llega como texto.
+    // MongoDB validator exige int en age.
     const age = formData.age ? parseInt(formData.age, 10) : undefined;
 
     try {
-      // Enviamos la mascota al backend.
       const res = await fetch(`${API_BASE}/api/pets`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          ...formData,
+          name: formData.name.trim(),
+          species: formData.species,
+          breed: formData.breed.trim() || undefined,
           age,
+          color: formData.color.trim() || undefined,
           gender: formData.gender || undefined,
+          chipNumber: formData.chipNumber.trim() || undefined,
+          ownerName: formData.ownerName.trim(),
+          ownerContact: formData.ownerContact.trim(),
+          rut: formData.rut.trim() || undefined,
+          email: formData.email.trim() || undefined,
+          address: formData.address.trim() || undefined,
+          medicalHistory: formData.medicalHistory.trim() || undefined,
           registrationDate: new Date().toISOString(),
         }),
       });
 
-      // Si el backend respondió con error, intentamos mostrar el mensaje real.
       if (!res.ok) {
         const error = await res.json().catch(() => null);
         alert('Error al registrar mascota: ' + (error?.error || res.statusText));
@@ -137,11 +151,9 @@ const AddPetForm: React.FC = () => {
         return;
       }
 
-      // Si todo salió bien, mostramos estado de éxito.
       setIsSubmitting(false);
       setIsSuccess(true);
 
-      // Reiniciamos el formulario después de guardar.
       setTimeout(() => {
         setFormData({
           name: '',
@@ -161,29 +173,29 @@ const AddPetForm: React.FC = () => {
         setIsSuccess(false);
       }, 2000);
     } catch (err) {
-      // Este catch normalmente entra si hay problema de red,
-      // CORS, backend caído o URL incorrecta.
       alert('Error de red al registrar mascota');
       setIsSubmitting(false);
     }
   };
 
+  // Los value deben coincidir EXACTAMENTE con el validator de Atlas.
   const speciesOptions = [
     { value: '', label: 'Seleccionar especie' },
-    { value: 'Dog', label: 'Perro' },
-    { value: 'Cat', label: 'Gato' },
-    { value: 'Bird', label: 'Ave' },
-    { value: 'Rabbit', label: 'Conejo' },
-    { value: 'Hamster', label: 'Hámster' },
-    { value: 'Other', label: 'Otro' },
+    { value: 'perro', label: 'Perro' },
+    { value: 'gato', label: 'Gato' },
+    { value: 'ave', label: 'Ave' },
+    { value: 'roedor', label: 'Roedor' },
+    { value: 'reptil', label: 'Reptil' },
+    { value: 'otro', label: 'Otro' },
   ];
 
+  // Los value deben coincidir EXACTAMENTE con el validator de Atlas.
   const genderOptions = [
     { value: '', label: 'Seleccionar género' },
     { value: 'macho', label: 'Macho' },
     { value: 'hembra', label: 'Hembra' },
-    { value: 'esterilizado', label: 'Esterilizada' },
-    { value: 'castrado', label: 'Castrado' },
+    { value: 'esterilizado', label: 'Esterilizado/a' },
+    { value: 'desconocido', label: 'Desconocido' },
   ];
 
   return (
@@ -228,6 +240,7 @@ const AddPetForm: React.FC = () => {
             name="age"
             type="number"
             min="0"
+            max="50"
             value={formData.age}
             onChange={handleChange}
             error={errors.age}
@@ -295,6 +308,7 @@ const AddPetForm: React.FC = () => {
             type="email"
             value={formData.email}
             onChange={handleChange}
+            error={errors.email}
             placeholder="Opcional"
           />
 
