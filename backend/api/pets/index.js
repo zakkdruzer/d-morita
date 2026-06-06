@@ -2,7 +2,9 @@ const mongoose = require('mongoose');
 const Pet = require('../../models/Pet');
 const { authMiddleware } = require('../../api/auth');
 
+// =========================================================
 // Helper para poder usar authMiddleware con await.
+// =========================================================
 const runAuth = (req, res) =>
   new Promise((resolve, reject) => {
     authMiddleware(req, res, (err) => {
@@ -13,13 +15,17 @@ const runAuth = (req, res) =>
 
 module.exports = async (req, res) => {
   try {
+    // =====================================================
     // Conexión a MongoDB.
+    // =====================================================
     await mongoose.connect(process.env.MONGODB_URI);
 
     console.log('Conectado a la base de datos:', mongoose.connection.name);
     console.log('req.url:', req.url, 'req.method:', req.method);
 
-    // Todas las rutas que modifican datos requieren token.
+    // =====================================================
+    // Métodos protegidos por autenticación.
+    // =====================================================
     const requiresAuth = ['POST', 'PUT', 'DELETE'].includes(req.method);
 
     if (requiresAuth) {
@@ -31,26 +37,29 @@ module.exports = async (req, res) => {
       }
     }
 
-    // =========================================================
+    // =====================================================
     // Ruta de prueba
-    // =========================================================
+    // GET /api/pets/test
+    // =====================================================
     if (req.url === '/test') {
       return res.status(200).json({ ok: true });
     }
 
-    // =========================================================
+    // =====================================================
     // Ruta: /api/pets/:id/consultations/:consultationId
     // Editar o eliminar una consulta específica
-    // =========================================================
-    const editConsultMatch = req.url.match(/^\/([a-f\d]{24})\/consultations\/([a-f\d]{24})$/i);
+    // =====================================================
+    const editConsultMatch = req.url.match(
+      /^\/([a-f\d]{24})\/consultations\/([a-f\d]{24})$/i
+    );
 
     if (editConsultMatch) {
       const petId = editConsultMatch[1];
       const consultationId = editConsultMatch[2];
 
-      // ---------------------------------------------------------
+      // -----------------------------------------------------
       // PUT: editar consulta
-      // ---------------------------------------------------------
+      // -----------------------------------------------------
       if (req.method === 'PUT') {
         try {
           const pet = await Pet.findById(petId);
@@ -65,7 +74,6 @@ module.exports = async (req, res) => {
             return res.status(404).json({ message: 'Consulta no encontrada' });
           }
 
-          // Actualizamos campos editables.
           consultation.fecha = req.body.fecha;
           consultation.anamnesis = req.body.anamnesis;
           consultation.examenFisico = req.body.examenFisico;
@@ -74,10 +82,7 @@ module.exports = async (req, res) => {
           consultation.tratamientos = req.body.tratamientos;
           consultation.recomendacion = req.body.recomendacion;
 
-          // Guardamos quién hizo la modificación.
           consultation.updatedBy = req.user.id;
-
-          // También registramos la modificación sobre la mascota.
           pet.updatedBy = req.user.id;
 
           await pet.save();
@@ -89,9 +94,9 @@ module.exports = async (req, res) => {
         }
       }
 
-      // ---------------------------------------------------------
+      // -----------------------------------------------------
       // DELETE: eliminar consulta
-      // ---------------------------------------------------------
+      // -----------------------------------------------------
       if (req.method === 'DELETE') {
         try {
           const pet = await Pet.findById(petId);
@@ -121,23 +126,20 @@ module.exports = async (req, res) => {
       return res.status(405).end();
     }
 
-    // =========================================================
+    // =====================================================
     // Ruta: /api/pets/:id/consultations
     // Listar o crear consultas de una mascota
-    // =========================================================
+    // =====================================================
     const consultMatch = req.url.match(/^\/([a-f\d]{24})\/consultations$/i);
 
     if (consultMatch) {
       const id = consultMatch[1];
 
-      // ---------------------------------------------------------
-      // GET: obtener consultas de una mascota
-      // ---------------------------------------------------------
+      // -----------------------------------------------------
+      // GET: obtener consultas
+      // -----------------------------------------------------
       if (req.method === 'GET') {
         try {
-          // IMPORTANTE:
-          // populate() convierte createdBy y updatedBy
-          // desde ObjectId a un objeto de usuario real.
           const pet = await Pet.findById(id)
             .populate('consultations.createdBy', 'username email')
             .populate('consultations.updatedBy', 'username email');
@@ -153,9 +155,9 @@ module.exports = async (req, res) => {
         }
       }
 
-      // ---------------------------------------------------------
+      // -----------------------------------------------------
       // POST: crear nueva consulta
-      // ---------------------------------------------------------
+      // -----------------------------------------------------
       if (req.method === 'POST') {
         try {
           const pet = await Pet.findById(id);
@@ -164,7 +166,6 @@ module.exports = async (req, res) => {
             return res.status(404).json({ message: 'Mascota no encontrada' });
           }
 
-          // Creamos la consulta con auditoría.
           pet.consultations.push({
             fecha: req.body.fecha,
             anamnesis: req.body.anamnesis,
@@ -181,8 +182,6 @@ module.exports = async (req, res) => {
 
           await pet.save();
 
-          // Volvemos a buscar la mascota con populate
-          // para devolver la consulta recién creada con username/email.
           const populatedPet = await Pet.findById(id)
             .populate('consultations.createdBy', 'username email')
             .populate('consultations.updatedBy', 'username email');
@@ -200,18 +199,18 @@ module.exports = async (req, res) => {
       return res.status(405).end();
     }
 
-    // =========================================================
+    // =====================================================
     // Ruta: /api/pets/:id
     // Obtener, editar o eliminar mascota
-    // =========================================================
+    // =====================================================
     const idMatch = req.url.match(/^\/([a-f\d]{24})$/i);
 
     if (idMatch) {
       const id = idMatch[1];
 
-      // ---------------------------------------------------------
-      // GET: obtener mascota por id
-      // ---------------------------------------------------------
+      // -----------------------------------------------------
+      // GET: obtener mascota
+      // -----------------------------------------------------
       if (req.method === 'GET') {
         try {
           const pet = await Pet.findById(id)
@@ -231,9 +230,9 @@ module.exports = async (req, res) => {
         }
       }
 
-      // ---------------------------------------------------------
+      // -----------------------------------------------------
       // PUT: editar mascota
-      // ---------------------------------------------------------
+      // -----------------------------------------------------
       if (req.method === 'PUT') {
         try {
           const pet = await Pet.findByIdAndUpdate(
@@ -261,9 +260,9 @@ module.exports = async (req, res) => {
         }
       }
 
-      // ---------------------------------------------------------
+      // -----------------------------------------------------
       // DELETE: eliminar mascota
-      // ---------------------------------------------------------
+      // -----------------------------------------------------
       if (req.method === 'DELETE') {
         try {
           const deletedPet = await Pet.findByIdAndDelete(id);
@@ -282,14 +281,14 @@ module.exports = async (req, res) => {
       return res.status(405).end();
     }
 
-    // =========================================================
+    // =====================================================
     // Ruta: /api/pets y /api/pets?name=...
     // Listar o crear mascotas
-    // =========================================================
+    // =====================================================
     if (req.url === '' || req.url === '/' || req.url.startsWith('/?')) {
-      // ---------------------------------------------------------
+      // -----------------------------------------------------
       // GET: listar mascotas
-      // ---------------------------------------------------------
+      // -----------------------------------------------------
       if (req.method === 'GET') {
         try {
           const { name } = req.query;
@@ -314,11 +313,14 @@ module.exports = async (req, res) => {
         }
       }
 
-      // ---------------------------------------------------------
+      // -----------------------------------------------------
       // POST: crear mascota
-      // ---------------------------------------------------------
+      // ESTE ES EL BLOQUE CLAVE QUE TE AYUDA A DEPURAR
+      // EL ERROR "Document failed validation"
+      // -----------------------------------------------------
       if (req.method === 'POST') {
         try {
+          // Creamos la mascota agregando auditoría.
           const newPet = new Pet({
             ...req.body,
             createdBy: req.user.id,
@@ -333,15 +335,36 @@ module.exports = async (req, res) => {
 
           return res.status(201).json(populatedPet);
         } catch (error) {
+          // Log general del error.
           console.error('Error al crear mascota:', error);
-          return res.status(400).json({ error: error.message });
+
+          // =================================================
+          // IMPORTANTE:
+          // Si MongoDB está rechazando por validador $jsonSchema,
+          // aquí imprimimos el detalle completo para saber
+          // qué campo falló, qué tipo esperaba, o qué regla
+          // se incumplió.
+          // =================================================
+          console.error(
+            'Detalles completos de validación MongoDB:',
+            JSON.stringify(error?.errInfo?.details, null, 2)
+          );
+
+          // También devolvemos el detalle al frontend para
+          // poder verlo en el navegador si hace falta.
+          return res.status(400).json({
+            error: error.message || 'Error al crear mascota',
+            details: error?.errInfo?.details || null,
+          });
         }
       }
 
       return res.status(405).end();
     }
 
-    // Si ninguna ruta coincide.
+    // =====================================================
+    // Si ninguna ruta coincide
+    // =====================================================
     return res.status(404).json({ error: 'Ruta no encontrada' });
   } catch (error) {
     console.error('Error general en /api/pets:', error);
