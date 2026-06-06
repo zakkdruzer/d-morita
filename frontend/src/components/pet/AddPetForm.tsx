@@ -1,15 +1,44 @@
 import React, { useState } from 'react';
+import { useAuth } from '../../context/AuthContext';
 import Input from '../ui/Input';
 import Select from '../ui/Select';
 import Button from '../ui/Button';
 import { PlusCircle, Check } from 'lucide-react';
+import { API_BASE } from '../../apiBase';
 
-// Backend desplegado en Render.
-// El endpoint real de creación queda en: /api/pets
-const API_BASE = 'https://d-morita.onrender.com';
+// =====================================================
+// Estructura local del formulario.
+// Todos los campos se manejan como string en la UI.
+// Luego se transforman si hace falta antes del envío.
+// =====================================================
+interface FormData {
+  name: string;
+  species: string;
+  breed: string;
+  age: string;
+  color: string;
+  gender: string;
+  chipNumber: string;
+  ownerName: string;
+  ownerContact: string;
+  rut: string;
+  email: string;
+  address: string;
+  medicalHistory: string;
+}
 
 const AddPetForm: React.FC = () => {
-  const [formData, setFormData] = useState({
+  // =====================================================
+  // Tomamos utilidades del contexto de autenticación.
+  // getToken() obtiene el JWT actual.
+  // logout() sirve para limpiar sesión si el token expiró.
+  // =====================================================
+  const { getToken, logout } = useAuth();
+
+  // =====================================================
+  // Estado principal del formulario.
+  // =====================================================
+  const [formData, setFormData] = useState<FormData>({
     name: '',
     species: '',
     breed: '',
@@ -25,16 +54,28 @@ const AddPetForm: React.FC = () => {
     medicalHistory: '',
   });
 
+  // Estado para errores de validación por campo.
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  // Estado visual mientras se envía el formulario.
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Estado visual de éxito después del guardado.
   const [isSuccess, setIsSuccess] = useState(false);
 
+  // =====================================================
+  // Maneja cambios de inputs y textarea.
+  // Si el campo tenía error, lo limpia al escribir.
+  // =====================================================
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
     const { name, value } = e.target;
 
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
 
     if (errors[name]) {
       setErrors((prev) => {
@@ -45,8 +86,14 @@ const AddPetForm: React.FC = () => {
     }
   };
 
+  // =====================================================
+  // Maneja cambios de los Select personalizados.
+  // =====================================================
   const handleSelectChange = (name: string) => (value: string) => {
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
 
     if (errors[name]) {
       setErrors((prev) => {
@@ -57,6 +104,9 @@ const AddPetForm: React.FC = () => {
     }
   };
 
+  // =====================================================
+  // Validación básica del formulario.
+  // =====================================================
   const validate = (): boolean => {
     const newErrors: Record<string, string> = {};
 
@@ -80,36 +130,35 @@ const AddPetForm: React.FC = () => {
       newErrors.age = 'La edad debe ser un número';
     }
 
-    // El validador de MongoDB pide entre 8 y 15 caracteres
-    // permitiendo números, espacios, +, - y paréntesis.
-    if (
-      formData.ownerContact &&
-      !/^[0-9+\-\s()]{8,15}$/.test(formData.ownerContact)
-    ) {
-      newErrors.ownerContact =
-        'El contacto debe tener entre 8 y 15 caracteres válidos';
-    }
-
-    // Si hay email, verificamos formato básico.
-    if (
-      formData.email &&
-      !/^.+@.+\..+$/.test(formData.email)
-    ) {
-      newErrors.email = 'El email no tiene un formato válido';
-    }
-
-    // Si hay edad, verificamos rango permitido por Atlas.
-    if (formData.age) {
-      const ageNumber = Number(formData.age);
-      if (ageNumber < 0 || ageNumber > 50) {
-        newErrors.age = 'La edad debe estar entre 0 y 50';
-      }
-    }
-
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
+  // =====================================================
+  // Reinicia los campos del formulario.
+  // =====================================================
+  const resetForm = () => {
+    setFormData({
+      name: '',
+      species: '',
+      breed: '',
+      age: '',
+      color: '',
+      gender: '',
+      chipNumber: '',
+      ownerName: '',
+      ownerContact: '',
+      rut: '',
+      email: '',
+      address: '',
+      medicalHistory: '',
+    });
+  };
+
+  // =====================================================
+  // Envía el formulario al backend.
+  // Ahora incluye Authorization con Bearer token.
+  // =====================================================
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -117,7 +166,18 @@ const AddPetForm: React.FC = () => {
 
     setIsSubmitting(true);
 
-    // MongoDB validator exige int en age.
+    // Recuperamos el token guardado tras el login.
+    const token = getToken();
+
+    // Si no hay token, la ruta protegida fallará sí o sí.
+    if (!token) {
+      alert('Tu sesión expiró o no es válida. Debes iniciar sesión nuevamente.');
+      setIsSubmitting(false);
+      logout();
+      return;
+    }
+
+    // Convertimos edad a número solo si fue ingresada.
     const age = formData.age ? parseInt(formData.age, 10) : undefined;
 
     try {
@@ -125,28 +185,29 @@ const AddPetForm: React.FC = () => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
-          name: formData.name.trim(),
-          species: formData.species,
-          breed: formData.breed.trim() || undefined,
+          ...formData,
           age,
-          color: formData.color.trim() || undefined,
           gender: formData.gender || undefined,
-          chipNumber: formData.chipNumber.trim() || undefined,
-          ownerName: formData.ownerName.trim(),
-          ownerContact: formData.ownerContact.trim(),
-          rut: formData.rut.trim() || undefined,
-          email: formData.email.trim() || undefined,
-          address: formData.address.trim() || undefined,
-          medicalHistory: formData.medicalHistory.trim() || undefined,
           registrationDate: new Date().toISOString(),
         }),
       });
 
+      const data = await res.json();
+
+      // Si hubo error de backend.
       if (!res.ok) {
-        const error = await res.json().catch(() => null);
-        alert('Error al registrar mascota: ' + (error?.error || res.statusText));
+        // Si la sesión ya no sirve, cerramos sesión.
+        if (res.status === 401) {
+          alert('Tu sesión expiró. Debes iniciar sesión nuevamente.');
+          logout();
+          setIsSubmitting(false);
+          return;
+        }
+
+        alert('Error al registrar mascota: ' + (data.error || res.statusText));
         setIsSubmitting(false);
         return;
       }
@@ -154,22 +215,11 @@ const AddPetForm: React.FC = () => {
       setIsSubmitting(false);
       setIsSuccess(true);
 
+      // Limpiamos el formulario.
+      resetForm();
+
+      // Ocultamos el mensaje de éxito tras 2 segundos.
       setTimeout(() => {
-        setFormData({
-          name: '',
-          species: '',
-          breed: '',
-          age: '',
-          color: '',
-          gender: '',
-          chipNumber: '',
-          ownerName: '',
-          ownerContact: '',
-          rut: '',
-          email: '',
-          address: '',
-          medicalHistory: '',
-        });
         setIsSuccess(false);
       }, 2000);
     } catch (err) {
@@ -178,182 +228,201 @@ const AddPetForm: React.FC = () => {
     }
   };
 
-  // Los value deben coincidir EXACTAMENTE con el validator de Atlas.
+  // =====================================================
+  // Opciones del selector de especie.
+  // =====================================================
   const speciesOptions = [
     { value: '', label: 'Seleccionar especie' },
-    { value: 'perro', label: 'Perro' },
-    { value: 'gato', label: 'Gato' },
-    { value: 'ave', label: 'Ave' },
-    { value: 'roedor', label: 'Roedor' },
-    { value: 'reptil', label: 'Reptil' },
-    { value: 'otro', label: 'Otro' },
+    { value: 'Dog', label: 'Perro' },
+    { value: 'Cat', label: 'Gato' },
+    { value: 'Bird', label: 'Ave' },
+    { value: 'Rabbit', label: 'Conejo' },
+    { value: 'Hamster', label: 'Hámster' },
+    { value: 'Other', label: 'Otro' },
   ];
 
-  // Los value deben coincidir EXACTAMENTE con el validator de Atlas.
+  // =====================================================
+  // Opciones del selector de género.
+  // =====================================================
   const genderOptions = [
     { value: '', label: 'Seleccionar género' },
     { value: 'macho', label: 'Macho' },
     { value: 'hembra', label: 'Hembra' },
-    { value: 'esterilizado', label: 'Esterilizado/a' },
-    { value: 'desconocido', label: 'Desconocido' },
+    { value: 'esterilizado', label: 'Esterilizada' },
+    { value: 'castrado', label: 'Castrado' },
   ];
 
   return (
-    <div className="max-w-3xl mx-auto bg-white rounded-lg shadow-md p-6 animate-fadeIn">
-      <h2 className="text-xl font-semibold mb-6">Agregar Nueva Mascota</h2>
+    <div className="max-w-4xl mx-auto bg-white rounded-lg shadow-md p-8 mt-8">
+      {/* Encabezado */}
+      <div className="flex items-center gap-3 mb-6">
+        <PlusCircle className="h-7 w-7 text-teal-600" />
+        <h2 className="text-2xl font-bold text-teal-700">Agregar Nueva Mascota</h2>
+      </div>
 
-      <form onSubmit={handleSubmit}>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6">
-          <div className="col-span-2 mb-4">
-            <h3 className="font-medium text-gray-700 mb-2">Información de la Mascota</h3>
-            <div className="w-full h-px bg-gray-200"></div>
-          </div>
+      <form onSubmit={handleSubmit} className="space-y-8">
+        {/* =============================================
+            Sección: Información de la mascota
+           ============================================= */}
+        <div>
+          <h3 className="text-lg font-semibold text-gray-800 mb-4">
+            Información de la Mascota
+          </h3>
 
-          <Input
-            label="Nombre de la Mascota"
-            name="name"
-            value={formData.name}
-            onChange={handleChange}
-            error={errors.name}
-            required
-          />
-
-          <Select
-            label="Especie"
-            options={speciesOptions}
-            value={formData.species}
-            onChange={handleSelectChange('species')}
-            error={errors.species}
-            required
-          />
-
-          <Input
-            label="Raza"
-            name="breed"
-            value={formData.breed}
-            onChange={handleChange}
-            placeholder="Opcional"
-          />
-
-          <Input
-            label="Edad (Años)"
-            name="age"
-            type="number"
-            min="0"
-            max="50"
-            value={formData.age}
-            onChange={handleChange}
-            error={errors.age}
-            placeholder="Opcional"
-          />
-
-          <Input
-            label="Color"
-            name="color"
-            value={formData.color}
-            onChange={handleChange}
-            placeholder="Opcional"
-          />
-
-          <Select
-            label="Género"
-            options={genderOptions}
-            value={formData.gender}
-            onChange={handleSelectChange('gender')}
-            error={errors.gender}
-          />
-
-          <Input
-            label="Número de Chip"
-            name="chipNumber"
-            value={formData.chipNumber}
-            onChange={handleChange}
-            placeholder="Opcional"
-          />
-
-          <div className="col-span-2 mt-4 mb-4">
-            <h3 className="font-medium text-gray-700 mb-2">Información del Dueño</h3>
-            <div className="w-full h-px bg-gray-200"></div>
-          </div>
-
-          <Input
-            label="Nombre del Dueño"
-            name="ownerName"
-            value={formData.ownerName}
-            onChange={handleChange}
-            error={errors.ownerName}
-            required
-          />
-
-          <Input
-            label="Número de Contacto"
-            name="ownerContact"
-            value={formData.ownerContact}
-            onChange={handleChange}
-            error={errors.ownerContact}
-            required
-          />
-
-          <Input
-            label="RUT"
-            name="rut"
-            value={formData.rut}
-            onChange={handleChange}
-            placeholder="Opcional"
-          />
-
-          <Input
-            label="Email"
-            name="email"
-            type="email"
-            value={formData.email}
-            onChange={handleChange}
-            error={errors.email}
-            placeholder="Opcional"
-          />
-
-          <Input
-            label="Dirección"
-            name="address"
-            value={formData.address}
-            onChange={handleChange}
-            placeholder="Opcional"
-          />
-
-          <div className="col-span-2">
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Historial Médico
-            </label>
-            <textarea
-              name="medicalHistory"
-              value={formData.medicalHistory}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Input
+              label="Nombre de la Mascota"
+              name="name"
+              value={formData.name}
               onChange={handleChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
-              rows={3}
-              placeholder="Opcional: Agregar historial médico relevante"
+              error={errors.name}
+              required
+            />
+
+            <Select
+              label="Especie"
+              name="species"
+              value={formData.species}
+              onChange={handleSelectChange('species')}
+              options={speciesOptions}
+              error={errors.species}
+              required
+            />
+
+            <Input
+              label="Raza"
+              name="breed"
+              value={formData.breed}
+              onChange={handleChange}
+            />
+
+            <Input
+              label="Edad"
+              name="age"
+              type="number"
+              value={formData.age}
+              onChange={handleChange}
+              error={errors.age}
+            />
+
+            <Input
+              label="Color"
+              name="color"
+              value={formData.color}
+              onChange={handleChange}
+            />
+
+            <Select
+              label="Género"
+              name="gender"
+              value={formData.gender}
+              onChange={handleSelectChange('gender')}
+              options={genderOptions}
+            />
+
+            <Input
+              label="Número de Chip"
+              name="chipNumber"
+              value={formData.chipNumber}
+              onChange={handleChange}
             />
           </div>
+        </div>
 
-          <div className="col-span-2 mt-6 flex flex-col items-center">
-            <Button
-              type="submit"
-              variant="primary"
-              fullWidth
-              isLoading={isSubmitting}
-              disabled={isSubmitting}
-            >
-              <PlusCircle size={18} className="mr-2" />
-              Registrar Mascota
-            </Button>
+        {/* =============================================
+            Sección: Información del dueño
+           ============================================= */}
+        <div>
+          <h3 className="text-lg font-semibold text-gray-800 mb-4">
+            Información del Dueño
+          </h3>
 
-            {isSuccess && (
-              <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded-md text-green-700 flex items-center transition-opacity duration-500">
-                <Check size={20} className="mr-2" />
-                <span>¡La mascota ha sido registrada exitosamente!</span>
-              </div>
-            )}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Input
+              label="Nombre del Dueño"
+              name="ownerName"
+              value={formData.ownerName}
+              onChange={handleChange}
+              error={errors.ownerName}
+              required
+            />
+
+            <Input
+              label="Contacto"
+              name="ownerContact"
+              value={formData.ownerContact}
+              onChange={handleChange}
+              error={errors.ownerContact}
+              required
+            />
+
+            <Input
+              label="RUT"
+              name="rut"
+              value={formData.rut}
+              onChange={handleChange}
+            />
+
+            <Input
+              label="Email"
+              name="email"
+              type="email"
+              value={formData.email}
+              onChange={handleChange}
+            />
+
+            <div className="md:col-span-2">
+              <Input
+                label="Dirección"
+                name="address"
+                value={formData.address}
+                onChange={handleChange}
+              />
+            </div>
           </div>
         </div>
+
+        {/* =============================================
+            Sección: Historial médico
+           ============================================= */}
+        <div>
+          <h3 className="text-lg font-semibold text-gray-800 mb-4">
+            Historial Médico
+          </h3>
+
+          <textarea
+            name="medicalHistory"
+            value={formData.medicalHistory}
+            onChange={handleChange}
+            rows={5}
+            placeholder="Describe antecedentes, vacunas, tratamientos previos, alergias, etc."
+            className="w-full rounded-md border border-gray-300 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-teal-500"
+          />
+        </div>
+
+        {/* =============================================
+            Botón de envío
+           ============================================= */}
+        <div>
+          <Button
+            type="submit"
+            variant="primary"
+            disabled={isSubmitting}
+            className="w-full md:w-auto"
+          >
+            {isSubmitting ? 'Registrando...' : 'Registrar Mascota'}
+          </Button>
+        </div>
+
+        {/* =============================================
+            Mensaje de éxito
+           ============================================= */}
+        {isSuccess && (
+          <div className="flex items-center gap-2 rounded-md border border-green-200 bg-green-50 px-4 py-3 text-green-700">
+            <Check className="h-5 w-5" />
+            <span>¡La mascota ha sido registrada exitosamente!</span>
+          </div>
+        )}
       </form>
     </div>
   );
