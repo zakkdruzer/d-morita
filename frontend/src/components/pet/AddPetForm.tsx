@@ -9,7 +9,7 @@ import { API_BASE } from '../../apiBase';
 // =====================================================
 // Estructura local del formulario.
 // Todos los campos se manejan como string en la UI.
-// Luego se transforman si hace falta antes del envío.
+// Antes de enviar, algunos se transforman o limpian.
 // =====================================================
 interface FormData {
   name: string;
@@ -29,9 +29,9 @@ interface FormData {
 
 const AddPetForm: React.FC = () => {
   // =====================================================
-  // Tomamos utilidades del contexto de autenticación.
+  // Contexto de autenticación.
   // getToken() obtiene el JWT actual.
-  // logout() sirve para limpiar sesión si el token expiró.
+  // logout() limpia sesión si el token ya no sirve.
   // =====================================================
   const { getToken, logout } = useAuth();
 
@@ -54,18 +54,18 @@ const AddPetForm: React.FC = () => {
     medicalHistory: '',
   });
 
-  // Estado para errores de validación por campo.
+  // Errores de validación por campo.
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  // Estado visual mientras se envía el formulario.
+  // Estado visual de envío.
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Estado visual de éxito después del guardado.
+  // Estado visual de éxito.
   const [isSuccess, setIsSuccess] = useState(false);
 
   // =====================================================
   // Maneja cambios de inputs y textarea.
-  // Si el campo tenía error, lo limpia al escribir.
+  // Si el campo tenía error, lo elimina al escribir.
   // =====================================================
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
@@ -87,7 +87,7 @@ const AddPetForm: React.FC = () => {
   };
 
   // =====================================================
-  // Maneja cambios de los Select personalizados.
+  // Maneja cambios de los select.
   // =====================================================
   const handleSelectChange = (name: string) => (value: string) => {
     setFormData((prev) => ({
@@ -135,7 +135,7 @@ const AddPetForm: React.FC = () => {
   };
 
   // =====================================================
-  // Reinicia los campos del formulario.
+  // Reinicia el formulario tras un guardado exitoso.
   // =====================================================
   const resetForm = () => {
     setFormData({
@@ -156,8 +156,41 @@ const AddPetForm: React.FC = () => {
   };
 
   // =====================================================
+  // Construye el payload final.
+  // IMPORTANTE:
+  // Los campos opcionales vacíos se convierten a undefined
+  // para NO enviar strings vacíos al backend.
+  //
+  // Esto ayuda especialmente con índices únicos sparse
+  // como rut y chipNumber.
+  // =====================================================
+  const buildPayload = () => {
+    return {
+      name: formData.name.trim(),
+      species: formData.species.trim(),
+      ownerName: formData.ownerName.trim(),
+      ownerContact: formData.ownerContact.trim(),
+
+      breed: formData.breed.trim() || undefined,
+      age: formData.age ? parseInt(formData.age, 10) : undefined,
+      color: formData.color.trim() || undefined,
+      gender: formData.gender || undefined,
+      chipNumber: formData.chipNumber.trim() || undefined,
+      rut: formData.rut.trim() || undefined,
+      email: formData.email.trim() || undefined,
+      address: formData.address.trim() || undefined,
+      medicalHistory: formData.medicalHistory.trim() || undefined,
+
+      registrationDate: new Date().toISOString(),
+    };
+  };
+
+  // =====================================================
   // Envía el formulario al backend.
-  // Ahora incluye Authorization con Bearer token.
+  // Ahora:
+  // - manda Authorization con Bearer token
+  // - limpia campos opcionales vacíos
+  // - maneja error 401
   // =====================================================
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -166,10 +199,8 @@ const AddPetForm: React.FC = () => {
 
     setIsSubmitting(true);
 
-    // Recuperamos el token guardado tras el login.
     const token = getToken();
 
-    // Si no hay token, la ruta protegida fallará sí o sí.
     if (!token) {
       alert('Tu sesión expiró o no es válida. Debes iniciar sesión nuevamente.');
       setIsSubmitting(false);
@@ -177,8 +208,7 @@ const AddPetForm: React.FC = () => {
       return;
     }
 
-    // Convertimos edad a número solo si fue ingresada.
-    const age = formData.age ? parseInt(formData.age, 10) : undefined;
+    const payload = buildPayload();
 
     try {
       const res = await fetch(`${API_BASE}/api/pets`, {
@@ -187,19 +217,12 @@ const AddPetForm: React.FC = () => {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({
-          ...formData,
-          age,
-          gender: formData.gender || undefined,
-          registrationDate: new Date().toISOString(),
-        }),
+        body: JSON.stringify(payload),
       });
 
       const data = await res.json();
 
-      // Si hubo error de backend.
       if (!res.ok) {
-        // Si la sesión ya no sirve, cerramos sesión.
         if (res.status === 401) {
           alert('Tu sesión expiró. Debes iniciar sesión nuevamente.');
           logout();
@@ -215,10 +238,8 @@ const AddPetForm: React.FC = () => {
       setIsSubmitting(false);
       setIsSuccess(true);
 
-      // Limpiamos el formulario.
       resetForm();
 
-      // Ocultamos el mensaje de éxito tras 2 segundos.
       setTimeout(() => {
         setIsSuccess(false);
       }, 2000);
@@ -262,7 +283,7 @@ const AddPetForm: React.FC = () => {
 
       <form onSubmit={handleSubmit} className="space-y-8">
         {/* =============================================
-            Sección: Información de la mascota
+            Información de la mascota
            ============================================= */}
         <div>
           <h3 className="text-lg font-semibold text-gray-800 mb-4">
@@ -330,7 +351,7 @@ const AddPetForm: React.FC = () => {
         </div>
 
         {/* =============================================
-            Sección: Información del dueño
+            Información del dueño
            ============================================= */}
         <div>
           <h3 className="text-lg font-semibold text-gray-800 mb-4">
@@ -383,7 +404,7 @@ const AddPetForm: React.FC = () => {
         </div>
 
         {/* =============================================
-            Sección: Historial médico
+            Historial médico
            ============================================= */}
         <div>
           <h3 className="text-lg font-semibold text-gray-800 mb-4">
