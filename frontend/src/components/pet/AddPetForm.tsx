@@ -30,13 +30,11 @@ interface FormData {
 const AddPetForm: React.FC = () => {
   // =====================================================
   // Contexto de autenticación.
-  // getToken() obtiene el JWT actual.
-  // logout() limpia sesión si el token ya no sirve.
   // =====================================================
   const { getToken, logout } = useAuth();
 
   // =====================================================
-  // Estado principal del formulario.
+  // Estado del formulario.
   // =====================================================
   const [formData, setFormData] = useState<FormData>({
     name: '',
@@ -54,10 +52,10 @@ const AddPetForm: React.FC = () => {
     medicalHistory: '',
   });
 
-  // Errores de validación por campo.
+  // Errores por campo.
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  // Estado visual de envío.
+  // Estado visual al enviar.
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Estado visual de éxito.
@@ -65,7 +63,6 @@ const AddPetForm: React.FC = () => {
 
   // =====================================================
   // Maneja cambios de inputs y textarea.
-  // Si el campo tenía error, lo elimina al escribir.
   // =====================================================
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
@@ -105,7 +102,8 @@ const AddPetForm: React.FC = () => {
   };
 
   // =====================================================
-  // Validación básica del formulario.
+  // Valida el formulario antes de enviar.
+  // Se alinea con el validador real de MongoDB.
   // =====================================================
   const validate = (): boolean => {
     const newErrors: Record<string, string> = {};
@@ -126,8 +124,14 @@ const AddPetForm: React.FC = () => {
       newErrors.ownerContact = 'El contacto del dueño es requerido';
     }
 
-    if (formData.age && isNaN(Number(formData.age))) {
-      newErrors.age = 'La edad debe ser un número';
+    if (formData.age) {
+      if (isNaN(Number(formData.age))) {
+        newErrors.age = 'La edad debe ser un número';
+      } else if (Number(formData.age) < 0) {
+        newErrors.age = 'La edad no puede ser negativa';
+      } else if (Number(formData.age) > 50) {
+        newErrors.age = 'La edad no puede ser mayor a 50';
+      }
     }
 
     setErrors(newErrors);
@@ -135,7 +139,7 @@ const AddPetForm: React.FC = () => {
   };
 
   // =====================================================
-  // Reinicia el formulario tras un guardado exitoso.
+  // Limpia el formulario luego de registrar.
   // =====================================================
   const resetForm = () => {
     setFormData({
@@ -157,12 +161,7 @@ const AddPetForm: React.FC = () => {
 
   // =====================================================
   // Construye el payload final.
-  // IMPORTANTE:
-  // Los campos opcionales vacíos se convierten a undefined
-  // para NO enviar strings vacíos al backend.
-  //
-  // Esto ayuda especialmente con índices únicos sparse
-  // como rut y chipNumber.
+  // Convierte strings vacíos a undefined en opcionales.
   // =====================================================
   const buildPayload = () => {
     return {
@@ -187,10 +186,6 @@ const AddPetForm: React.FC = () => {
 
   // =====================================================
   // Envía el formulario al backend.
-  // Ahora:
-  // - manda Authorization con Bearer token
-  // - limpia campos opcionales vacíos
-  // - maneja error 401
   // =====================================================
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -237,7 +232,6 @@ const AddPetForm: React.FC = () => {
 
       setIsSubmitting(false);
       setIsSuccess(true);
-
       resetForm();
 
       setTimeout(() => {
@@ -250,16 +244,19 @@ const AddPetForm: React.FC = () => {
   };
 
   // =====================================================
-  // Opciones del selector de especie.
+  // Opciones de especie.
+  // IMPORTANTE:
+  // Los values deben coincidir exactamente con el enum
+  // definido en el validador de MongoDB.
   // =====================================================
   const speciesOptions = [
     { value: '', label: 'Seleccionar especie' },
-    { value: 'Dog', label: 'Perro' },
-    { value: 'Cat', label: 'Gato' },
-    { value: 'Bird', label: 'Ave' },
-    { value: 'Rabbit', label: 'Conejo' },
-    { value: 'Hamster', label: 'Hámster' },
-    { value: 'Other', label: 'Otro' },
+    { value: 'perro', label: 'Perro' },
+    { value: 'gato', label: 'Gato' },
+    { value: 'ave', label: 'Ave' },
+    { value: 'roedor', label: 'Roedor' },
+    { value: 'reptil', label: 'Reptil' },
+    { value: 'otro', label: 'Otro' },
   ];
 
   // =====================================================
@@ -282,9 +279,7 @@ const AddPetForm: React.FC = () => {
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-8">
-        {/* =============================================
-            Información de la mascota
-           ============================================= */}
+        {/* Información de la mascota */}
         <div>
           <h3 className="text-lg font-semibold text-gray-800 mb-4">
             Información de la Mascota
@@ -321,6 +316,8 @@ const AddPetForm: React.FC = () => {
               label="Edad"
               name="age"
               type="number"
+              min="0"
+              max="50"
               value={formData.age}
               onChange={handleChange}
               error={errors.age}
@@ -350,9 +347,7 @@ const AddPetForm: React.FC = () => {
           </div>
         </div>
 
-        {/* =============================================
-            Información del dueño
-           ============================================= */}
+        {/* Información del dueño */}
         <div>
           <h3 className="text-lg font-semibold text-gray-800 mb-4">
             Información del Dueño
@@ -403,9 +398,7 @@ const AddPetForm: React.FC = () => {
           </div>
         </div>
 
-        {/* =============================================
-            Historial médico
-           ============================================= */}
+        {/* Historial médico */}
         <div>
           <h3 className="text-lg font-semibold text-gray-800 mb-4">
             Historial Médico
@@ -421,9 +414,7 @@ const AddPetForm: React.FC = () => {
           />
         </div>
 
-        {/* =============================================
-            Botón de envío
-           ============================================= */}
+        {/* Botón de envío */}
         <div>
           <Button
             type="submit"
@@ -435,9 +426,7 @@ const AddPetForm: React.FC = () => {
           </Button>
         </div>
 
-        {/* =============================================
-            Mensaje de éxito
-           ============================================= */}
+        {/* Mensaje de éxito */}
         {isSuccess && (
           <div className="flex items-center gap-2 rounded-md border border-green-200 bg-green-50 px-4 py-3 text-green-700">
             <Check className="h-5 w-5" />
